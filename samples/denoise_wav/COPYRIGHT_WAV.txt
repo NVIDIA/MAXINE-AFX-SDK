@@ -1,0 +1,14 @@
+/*###############################################################################
+#
+# Copyright(c) 2020 NVIDIA CORPORATION.All Rights Reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights to the provided wav files and any modifications
+# thereto. Any use, reproduction, disclosure or distribution of the wav files
+# without an express license agreement from NVIDIA CORPORATION is
+# strictly prohibited.
+###############################################################################*/
+
+This copyright applies to following wav files:
+1. noisy_16k.wav
+2. noisy_48k.wav

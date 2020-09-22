@@ -1,49 +1,34 @@
-Readme
-======
-This sample app goes along with NVIDIA Audio Effects SDK redistributable. The
-redistributable helps applications which have integrated against Audio Effects SDK
-to deploy SDK DLLs and models on user machines.
+# Readme
 
-During development for NVIDIA partners:
-Application X <=> NVIDIA Audio Effects SDK
-On End User machine:
-Application X <=> NVIDIA Audio Effects SDK redistributable
+NVIDIA Broadcast Audio Effects (AFX) SDK: API Source Code and Sample Applications
 
-This sample app is developed to serve as an example of how an application
-can use the installed redistributable.
-Sample app <=> NVIDIA Audio Effects SDK redistributable
+NVIDIA Broadcast AFX SDK provides audio denoising for broadcast use cases with real-time audio processing. Recordings of speech made outside of a recording studio can contain a lot of background noise, which causes the speech to be garbled and difficult to understand. Audio denoising removes the background noise. The SDK is powered by NVIDIA RTX graphic processor units (GPUs) with Tensor Cores, so the algorithm throughput is greatly accelerated, and latency is reduced.
 
-NVIDIA Audio Effects SDK redistributable comes as an executable which is installed on
-end user machine. It contains the binaries required for Audio Effects SDK to work.
-The key point to note here is that the redistributable sets an environment variable
-named NVAFX_SDK_DIR during installation. This variable points to the directory where
-the SDK was installed.
+NVIDIA Broadcast AFX SDK is distributed in the following parts:
 
-Folder structure for sample app
-===============================
-samples\denoise_wav:
- The sample app. This folder contains the prebuilt sample app "denoise_wav.exe".
- The batch files (run_*.bat) use the previously set environment variable
- NVAFX_SDK_DIR to set the paths necessary for denoise_wav.exe to run. Go ahead
- and run the bat files.
-nvafx\include:
- NVIDIA Audio Effects SDK header file.
-nvafx\lib:
- NVIDIA Audio Effects SDK library
- 
-Not that the binaries are part of the redistributable and need to be installed separately.
+-  This open source repository that includes the [SDK API](https://github.com/NVIDIA/BROADCAST-AFX-SDK/tree/master/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/BROADCAST-AFX-SDK/tree/master/samples).
+- An installer hosted on [RTX broadcast engine developer page](https://www.nvidia.com/broadcast-sdk-resources) that installs the SDK DLLs, the models, and the SDK dependency libraries.
 
-Compiling the sample app
-========================
-Steps to try the Audio Effects Redistributable SDK package. CMake is used to
-generate the build system.
+Please refer to the [SDK programming guide](https://github.com/NVIDIA/BROADCAST-AFX-SDK/blob/pre/NVIDIA%20Audio%20Effects%20SDK%20Programming%20Guide.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA Audio Effects SDK](https://developer.nvidia.com/broadcast-engine/audio-effects-sdk) webpage for more information about the SDK.
 
-1. Goto root folder of sample app and create a directory "build".
-2. Goto build directory. Open command prompt window and navigate to
-   the "build" directory.
+## System requirements
+The SDK is supported on NVIDIA GPUs with Tensor Cores.
+* Windows OS supported: 64-bit Windows 10
+* Microsoft Visual Studio: 2015 (MSVC14.0) or later
+* CMake: v3.9 or later
+* NVIDIA Graphics Driver for Windows: 455.95 or later
+
+##  NVIDIA Branding Guidelines
+
+If you integrate an NVIDIA Broadcast Engine SDK within your product, please follow the required branding guidelines that are available here:
+https://nvidia.frontify.com/d/uAobRitG8H8B
+
+## Compiling the sample app
+
+### Steps
+1. Goto the root folder of the cloned repository and create a directory called "build".
+2. Open command prompt window and navigate to the "build" directory.
 3. Run the command "cmake-gui .." (Ensure cmake installation directory is in the path)
-4. In the opened CMake GUI, select visual studio version with X64 architecture and complete
-   the Configuration and Generate procedure.
+4. In the opened CMake GUI, select visual studio version with x64 architecture and complete the _Configuration_ and _Generate_ process.
 5. Build the solution.
-6. The output folder (Release/Debug) has the generated denoise_wav binary and associated
-   batch files to run against installed redistributable.
+6. The output folder (Release/Debug) has the generated denoise_wav binary and associated batch files to run against the installed redistributable.
