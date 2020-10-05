@@ -9,7 +9,7 @@ NVIDIA Broadcast AFX SDK is distributed in the following parts:
 -  This open source repository that includes the [SDK API](https://github.com/NVIDIA/BROADCAST-AFX-SDK/tree/master/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/BROADCAST-AFX-SDK/tree/master/samples).
 - An installer hosted on [RTX broadcast engine developer page](https://www.nvidia.com/broadcast-sdk-resources) that installs the SDK DLLs, the models, and the SDK dependency libraries.
 
-Please refer to the [SDK programming guide](https://github.com/NVIDIA/BROADCAST-AFX-SDK/blob/pre/NVIDIA%20Audio%20Effects%20SDK%20Programming%20Guide.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA Audio Effects SDK](https://developer.nvidia.com/broadcast-engine/audio-effects-sdk) webpage for more information about the SDK.
+Please refer to the [SDK programming guide](https://github.com/NVIDIA/BROADCAST-AFX-SDK/blob/master/NVIDIA%20Audio%20Effects%20SDK%20Programming%20Guide.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA Audio Effects SDK](https://developer.nvidia.com/broadcast-engine/audio-effects-sdk) webpage for more information about the SDK.
 
 ## System requirements
 The SDK is supported on NVIDIA GPUs with Tensor Cores.
