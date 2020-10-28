@@ -12,4 +12,3 @@ real_time 0
 # Intensity Ratio
 intensity_ratio 1.0
 # Point this to the model file
-filter_model C:\Program Files\NVIDIA Corporation\NVIDIA Audio Effects SDK\models\denoiser_16k.trtpkg 
