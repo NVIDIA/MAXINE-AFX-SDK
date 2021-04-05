@@ -27,6 +27,6 @@ target_link_libraries(NVAudioEffects INTERFACE
 set(ENABLE_SAMPLES TRUE)
 add_subdirectory(samples)
 
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT denoise_wav)
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT effects_demo)
 
 

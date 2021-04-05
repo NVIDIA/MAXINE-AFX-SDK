@@ -1,27 +1,32 @@
 # Readme
 
-NVIDIA Broadcast Audio Effects (AFX) SDK: API Source Code and Sample Applications
+NVIDIA MAXINE Audio Effects (AFX) SDK: API Source Code and Sample Applications
 
-NVIDIA Broadcast AFX SDK provides audio denoising for broadcast use cases with real-time audio processing. Recordings of speech made outside of a recording studio can contain a lot of background noise, which causes the speech to be garbled and difficult to understand. Audio denoising removes the background noise. The SDK is powered by NVIDIA RTX graphic processor units (GPUs) with Tensor Cores, so the algorithm throughput is greatly accelerated, and latency is reduced.
+NVIDIA MAXINE AFX SDK provides various audio effects for broadcast use cases with real-time audio processing. Recordings of speech made outside of a recording studio can contain a lot of background noise, which causes the speech to be garbled and difficult to understand. This SDK comes with following audio effects to help clean the audio stream in real time and non real time use cases:
+1. Background Noise Suppression (Denoising)
+2. Room Echo Cancellation  (Dereverb)
+3. Room Echo Cancellation + Background Noise Suppression (Dereverb + Denoiser)
 
-NVIDIA Broadcast AFX SDK is distributed in the following parts:
+The SDK is powered by NVIDIA RTX graphics processor units (GPUs) with Tensor Cores, thus the algorithm throughput is greatly accelerated, and the latency is reduced.
 
--  This open source repository that includes the [SDK API](https://github.com/NVIDIA/BROADCAST-AFX-SDK/tree/master/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/BROADCAST-AFX-SDK/tree/master/samples).
-- An installer hosted on [RTX broadcast engine developer page](https://www.nvidia.com/broadcast-sdk-resources) that installs the SDK DLLs, the models, and the SDK dependency libraries.
+NVIDIA MAXINE AFX SDK is distributed in the following parts:
 
-Please refer to the [SDK programming guide](https://github.com/NVIDIA/BROADCAST-AFX-SDK/blob/master/NVIDIA%20Audio%20Effects%20SDK%20Programming%20Guide.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA Audio Effects SDK](https://developer.nvidia.com/broadcast-engine/audio-effects-sdk) webpage for more information about the SDK.
+-  This open source repository that includes the [SDK API](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.0/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.0/samples).
+- An installer hosted on [NVIDIA MAXINE developer page](https://www.nvidia.com/broadcast-sdk-resources) that installs the SDK DLLs, the models, and the SDK dependency libraries.
+
+Please refer to the [SDK programming guide](https://github.com/NVIDIA/MAXINE-AFX-SDK/blob/v1.0/NVIDIA%20Audio%20Effects%20SDK%20Programming%20Guide.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA MAXINE Audio Effects SDK](https://developer.nvidia.com/maxine-getting-started) webpage for more information about the SDK.
 
 ## System requirements
 The SDK is supported on NVIDIA GPUs with Tensor Cores.
 * Windows OS supported: 64-bit Windows 10
 * Microsoft Visual Studio: 2015 (MSVC14.0) or later
 * CMake: v3.9 or later
-* NVIDIA Graphics Driver for Windows: 455.95 or later
+* NVIDIA Graphics Driver for Windows: 460.34 or later
 
-##  NVIDIA Branding Guidelines
+##  NVIDIA MAXINE Branding Guidelines
 
-If you integrate an NVIDIA Broadcast Engine SDK within your product, please follow the required branding guidelines that are available here:
-https://nvidia.frontify.com/d/uAobRitG8H8B
+If you integrate an NVIDIA MAXINE SDK within your product, please follow the required branding guidelines that are available here:
+https://www.nvidia.com/maxine-sdk-guidelines
 
 ## Compiling the sample app
 

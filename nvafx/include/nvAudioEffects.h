@@ -68,8 +68,8 @@ typedef enum {
   NVAFX_STATUS_32_SERVER_NOT_REGISTERED = 9,
   /** (32 bit SDK only) COM operation failed */
   NVAFX_STATUS_32_COM_ERROR = 10,
-  /** GPU supported. The SDK requires Turing and above GPU with Tensor cores */
-  NVAFX_STATUS_GPU_UNSUPPORTED = 11,
+  /** The selected GPU is not supported. The SDK requires Turing and above GPU with Tensor cores */
+  NVAFX_STATUS_GPU_UNSUPPORTED = 11
 } NvAFX_Status;
 
 /** We use strings as effect selectors */
@@ -143,6 +143,18 @@ NvAFX_Status NVAFX_API NvAFX_GetFloat(NvAFX_Handle effect, NvAFX_ParameterSelect
  */
 NvAFX_Status NVAFX_API NvAFX_Load(NvAFX_Handle effect);
 
+/** Get the devices supported by the model.
+ *
+ * @note This method must be called after setting model path.
+ *
+ * @param[in]      effect     The effect object handle.
+ * @param[in,out]  num        The size of the input array. This value will be set by the function if call succeeds.
+ * @param[in,out]  devices    Array of size num. The function will fill the array with CUDA device indices of devices
+                              supported by the model, in descending order of preference (first = most preferred device)
+ * @return Status values as enumerated in @ref NvAFX_Status
+ */
+NvAFX_Status NVAFX_API NvAFX_GetSupportedDevices(NvAFX_Handle effect, int *num, int *devices);
+
 /** Process the input buffer as per the effect selected. e.g. denoising
  *
  * @note The input float data is expected to be standard 32-bit float type with values in range [-1.0, +1.0]
@@ -171,22 +183,41 @@ NvAFX_Status NVAFX_API NvAFX_Run(NvAFX_Handle effect, const float** input, float
 
 /** Denoiser Effect */
 #define NVAFX_EFFECT_DENOISER "denoiser"
+/** Dereverb Effect */
+#define NVAFX_EFFECT_DEREVERB "dereverb"
+/** Dereverb Denoiser Effect */
+#define NVAFX_EFFECT_DEREVERB_DENOISER "dereverb_denoiser"
 
 /** Parameter selectors */
 
 /** Common Effect parameters. */
+/** To set if SDK should select the default GPU to run the effects in a Multi-GPU setup(unsigned int).
+    Default value is 0. Please see user manual for details.*/
+#define NVAFX_PARAM_USE_DEFAULT_GPU "use_default_gpu"
 
-/** Denoiser parameters. @ref NvAFX_ParameterSelector */
-/** Denoiser filter model path (char*) */
-#define NVAFX_PARAM_DENOISER_MODEL_PATH "denoiser_model_path"
-/** Denoiser sample rate (unsigned int). Currently supported sample rate(s): 48000 */
-#define NVAFX_PARAM_DENOISER_SAMPLE_RATE "sample_rate"
-/** Denoiser number of samples per frame (unsigned int). This is immutable parameter */
-#define NVAFX_PARAM_DENOISER_NUM_SAMPLES_PER_FRAME "num_samples_per_frame"
-/** Denoiser number of channels in I/O (unsigned int). This is immutable parameter */
-#define NVAFX_PARAM_DENOISER_NUM_CHANNELS "num_channels"
-/** Denoiser noise suppression factor (float) */
-#define NVAFX_PARAM_DENOISER_INTENSITY_RATIO "intensity_ratio"
+/** Effect parameters. @ref NvAFX_ParameterSelector */
+/** Model path (char*) */
+#define NVAFX_PARAM_MODEL_PATH "model_path"
+/** Sample rate (unsigned int). Currently supported sample rate(s): 48000, 16000 */
+#define NVAFX_PARAM_SAMPLE_RATE "sample_rate"
+/** Number of samples per frame (unsigned int). This is immutable parameter */
+#define NVAFX_PARAM_NUM_SAMPLES_PER_FRAME "num_samples_per_frame"
+/** Number of channels in I/O (unsigned int). This is immutable parameter */
+#define NVAFX_PARAM_NUM_CHANNELS "num_channels"
+/** Effect intensity factor (float) */
+#define NVAFX_PARAM_INTENSITY_RATIO "intensity_ratio"
+
+/** Deprecated parameters */
+#pragma deprecated(NVAFX_PARAM_DENOISER_MODEL_PATH)
+#define NVAFX_PARAM_DENOISER_MODEL_PATH NVAFX_PARAM_MODEL_PATH
+#pragma deprecated(NVAFX_PARAM_DENOISER_SAMPLE_RATE)
+#define NVAFX_PARAM_DENOISER_SAMPLE_RATE NVAFX_PARAM_SAMPLE_RATE
+#pragma deprecated(NVAFX_PARAM_DENOISER_NUM_SAMPLES_PER_FRAME)
+#define NVAFX_PARAM_DENOISER_NUM_SAMPLES_PER_FRAME NVAFX_PARAM_NUM_SAMPLES_PER_FRAME
+#pragma deprecated(NVAFX_PARAM_DENOISER_NUM_CHANNELS)
+#define NVAFX_PARAM_DENOISER_NUM_CHANNELS NVAFX_PARAM_NUM_CHANNELS
+#pragma deprecated(NVAFX_PARAM_DENOISER_INTENSITY_RATIO)
+#define NVAFX_PARAM_DENOISER_INTENSITY_RATIO NVAFX_PARAM_INTENSITY_RATIO
 
 #if defined(__cplusplus)
 }

@@ -29,12 +29,52 @@
 #include <chrono>
 #include <thread>
 
-#include <utils/ReadWavFile.hpp>
-#include <utils/ConfigReader.hpp>
+#include <utils/wave_reader/waveReadWrite.hpp>
+#include <utils/config_reader/ConfigReader.hpp>
 
 #include <nvAudioEffects.h>
 
 namespace {
+
+bool ReadWavFile(const std::string& filename, uint32_t expected_sample_rate, std::vector<float>* data,
+                 int align_samples) {
+  CWaveFileRead wave_file(filename);
+  if (wave_file.isValid() == false) {
+    return false;
+  }
+  const float* raw_data_array = wave_file.GetFloatPCMData();
+  std::cout << "Total number of samples: " << wave_file.GetNumSamples() << std::endl;
+  std::cout << "Size in bytes: " << wave_file.GetRawPCMDataSizeInBytes() << std::endl;
+  std::cout << "Sample rate: " << wave_file.GetSampleRate() << std::endl;
+
+  auto bits_per_sample = wave_file.GetBitsPerSample();
+  std::cout << "Bits/sample: " << bits_per_sample << std::endl;
+
+  if (wave_file.GetSampleRate() != expected_sample_rate) {
+    std::cout << "Sample rate mismatch" << std::endl;
+    return false;
+  }
+  if (wave_file.GetWaveFormat().nChannels != 1) {
+    std::cout << "Channel count needs to be 1" << std::endl;
+    return false;
+  }
+
+  if (align_samples != -1) {
+    int num_frames = wave_file.GetNumSamples() / align_samples;
+    if (wave_file.GetNumSamples() % align_samples) {
+      num_frames++;
+    }
+
+    // allocate potentially a bigger sized buffer to align it to requested
+    data->resize(num_frames * align_samples);
+  } else {
+    data->resize(wave_file.GetNumSamples(), 0.f);
+  }
+  std::copy(raw_data_array, raw_data_array + wave_file.GetNumSamples(), data->data());
+  return true;
+}
+
+const char kConfigEffectVariable[] = "effect";
 const char kConfigSampleRateVariable[] = "sample_rate";
 const char kConfigFileInputVariable[] = "input_wav";
 const char kConfigFileOutputVariable[] = "output_wav";
@@ -42,29 +82,27 @@ const char kConfigFileRTVariable[] = "real_time";
 const char kConfigIntensityRatioVariable[] = "intensity_ratio";
 
 /* model */
-const char kConfigFileModelVariable[] = "filter_model";
+const char kConfigFileModelVariable[] = "model";
 /* allowed sample rates */
 const std::vector<uint32_t> kAllowedSampleRates = { 16000, 48000 };
 } // namespace
 
-class DenoiserApp {
+class EffectsDemoApp {
  public:
   bool run(const ConfigReader& config_reader);
 
  private:
   // Validate configuration data.
   bool validate_config(const ConfigReader& config_reader);
-
- private:
-  // Denoiser sample rate config
+  // Sample rate config
   uint32_t sample_rate_ = 0;
-  // Denoiser intensity_ratio config
+  // Intensity_ratio config
   float intensity_ratio_ = 1.0f;
   // inited from configuration
   bool real_time_ = false;
 };
 
-bool DenoiserApp::validate_config(const ConfigReader& config_reader)
+bool EffectsDemoApp::validate_config(const ConfigReader& config_reader)
 {
   std::string sample_rate_str;
   if (config_reader.GetConfigValue(kConfigSampleRateVariable, &sample_rate_str)) {
@@ -75,6 +113,11 @@ bool DenoiserApp::validate_config(const ConfigReader& config_reader)
     }
   } else {
     std::cerr << "No " << kConfigSampleRateVariable << " variable found" << std::endl;
+    return false;
+  }
+
+  if (config_reader.IsConfigValueAvailable(kConfigEffectVariable) == false) {
+    std::cerr << "No " << kConfigEffectVariable << " variable found" << std::endl;
     return false;
   }
 
@@ -121,7 +164,7 @@ bool DenoiserApp::validate_config(const ConfigReader& config_reader)
   return true;
 }
 
-bool DenoiserApp::run(const ConfigReader& config_reader)
+bool EffectsDemoApp::run(const ConfigReader& config_reader)
 {
   if (validate_config(config_reader) == false)
     return false;
@@ -143,25 +186,69 @@ bool DenoiserApp::run(const ConfigReader& config_reader)
   }
 
   NvAFX_Handle handle;
-  if (NvAFX_CreateEffect(NVAFX_EFFECT_DENOISER, &handle) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+  std::string effect = config_reader.GetConfigValue(kConfigEffectVariable);
+  if (strcmp(effect.c_str(), "denoiser") == 0) {
+    if (NvAFX_CreateEffect(NVAFX_EFFECT_DENOISER, &handle) != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+      return false;
+    }
+  } else if (strcmp(effect.c_str(), "dereverb") == 0) {
+    if (NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB, &handle) != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+      return false;
+    }
+  } else if (strcmp(effect.c_str(), "dereverb_denoiser") == 0) {
+    if (NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB_DENOISER, &handle) != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+      return false;
+    }
+  } else {
+    std::cerr << "NvAFX_CreateEffect() failed. Invalid Effect Value : " << effect << std::endl;
     return false;
   }
 
-  if (NvAFX_SetU32(handle, NVAFX_PARAM_DENOISER_SAMPLE_RATE, sample_rate_) != NVAFX_STATUS_SUCCESS) {
+  // If the system has multiple supported GPUs, then the application can either
+  // use CUDA driver APIs or CUDA runtime APIs to enumerate the GPUs and select one based on the application's requirements
+  // or offload the responsibility to SDK to select the GPU by setting NVAFX_PARAM_USE_DEFAULT_GPU as 1
+  /*if (NvAFX_SetU32(handle, NVAFX_PARAM_USE_DEFAULT_GPU, 1) != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_SetBool(NVAFX_PARAM_USE_DEFAULT_GPU " << ") failed" << std::endl;
+    return false;
+  }*/
+
+  if (NvAFX_SetU32(handle, NVAFX_PARAM_SAMPLE_RATE, sample_rate_) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_SetU32(Sample Rate: " << sample_rate_ << ") failed" << std::endl;
     return false;
   }
 
-  if (NvAFX_SetFloat(handle, NVAFX_PARAM_DENOISER_INTENSITY_RATIO, intensity_ratio_) != NVAFX_STATUS_SUCCESS) {
+  if (NvAFX_SetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio_) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_SetFloat(Intensity Ratio: " << intensity_ratio_ << ") failed" << std::endl;
     return false;
   }
-  std::string filter_model_file = config_reader.GetConfigValue(kConfigFileModelVariable);
-  if (NvAFX_SetString(handle, NVAFX_PARAM_DENOISER_MODEL_PATH, filter_model_file.c_str())
+  std::string model_file = config_reader.GetConfigValue(kConfigFileModelVariable);
+  if (NvAFX_SetString(handle, NVAFX_PARAM_MODEL_PATH, model_file.c_str())
       != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_SetString() failed" << std::endl;
     return false;
+  }
+
+  // Another option could be to use cudaGetDeviceCount for num
+  int num_supported_devices = 0;
+  if (NvAFX_GetSupportedDevices(handle, &num_supported_devices, nullptr) != NVAFX_STATUS_OUTPUT_BUFFER_TOO_SMALL) {
+    std::cerr << "Could not get number of supported devices" << std::endl;
+    return false;
+  }
+
+  std::cout << "Number of supported devices for this model: " << num_supported_devices << std::endl;
+
+  std::vector<int> ret(num_supported_devices);
+  if (NvAFX_GetSupportedDevices(handle, &num_supported_devices, ret.data()) != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "No supported devices found" << std::endl;
+    return false;
+  }
+
+  std::cout << "Devices supported (sorted by preference)" << std::endl;
+  for (int device: ret) {
+    std::cout << "- " << device <<std::endl;
   }
 
   std::string input_wav = config_reader.GetConfigValue(kConfigFileInputVariable);
@@ -173,32 +260,32 @@ bool DenoiserApp::run(const ConfigReader& config_reader)
   }
   std::cout << "Done" << std::endl;
   unsigned num_channels, num_samples_per_frame;
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_DENOISER_NUM_CHANNELS, &num_channels) != NVAFX_STATUS_SUCCESS) {
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_CHANNELS, &num_channels) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
   }
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_DENOISER_NUM_SAMPLES_PER_FRAME, &num_samples_per_frame)
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_SAMPLES_PER_FRAME, &num_samples_per_frame)
       != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
   }
   float intensity_ratio_local;
-  if (NvAFX_GetFloat(handle, NVAFX_PARAM_DENOISER_INTENSITY_RATIO, &intensity_ratio_local) != NVAFX_STATUS_SUCCESS) {
+  if (NvAFX_GetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, &intensity_ratio_local) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_GetFloat() failed" << std::endl;
     return false;
   }
 
-  std::cout << "Denoiser properties:" << std::endl
-    << "  Channels            : " << num_channels << std::endl
-    << "  Samples per frame   : " << num_samples_per_frame << std::endl
-    << "  Intensity Ratio   : " << intensity_ratio_local << std::endl;
+  std::cout << "  Effect properties : " << std::endl
+            << "  Channels            : " << num_channels << std::endl
+            << "  Samples per frame   : " << num_samples_per_frame << std::endl
+            << "  Intensity Ratio   : " << intensity_ratio_local << std::endl;
 
   if (!ReadWavFile(input_wav, sample_rate_, &audio_data, num_samples_per_frame)) {
     std::cerr << "Unable to read wav file: " << input_wav << std::endl;
     return false;
   }
   std::cout << "Input wav file: " << input_wav << std::endl
-    << "Total " << audio_data.size() << " samples read" << std::endl;
+            << "Total " << audio_data.size() << " samples read" << std::endl;
 
 
   std::string output_wav = config_reader.GetConfigValue(kConfigFileOutputVariable);
@@ -232,7 +319,7 @@ bool DenoiserApp::run(const ConfigReader& config_reader)
     total_run_time += (std::chrono::duration<float>(run_end_tick - start_tick)).count();
     total_audio_duration += frame_in_secs;
 
-    if ((total_audio_duration / expected_audio_duration) > checkpoint) {
+    if ((total_audio_duration / expected_audio_duration) >= checkpoint) {
       progress_bar[checkpoint * 10] = '=';
       std::cout << "Processed: " << progress_bar << checkpoint * 100.f << "%" << (checkpoint >= 1 ? "\n" : "\r");
       std::cout.flush();
@@ -249,17 +336,19 @@ bool DenoiserApp::run(const ConfigReader& config_reader)
     }
   }
 
-  std::cout << "Processing time " << std::setprecision(2) << total_run_time << " secs for "
-    << total_audio_duration << std::setprecision(2) << " secs audio file (" << total_run_time / total_audio_duration
-    << " secs processing time per sec of audio)" << std::endl;
+  std::cout << "Processing time " << std::setprecision(2) << total_run_time 
+            << " secs for " << total_audio_duration << std::setprecision(2) 
+            << " secs audio file (" << total_run_time / total_audio_duration
+            << " secs processing time per sec of audio)" << std::endl;
+
   if (real_time_) {
     std::cout << "Note: App ran in real time mode i.e. simulated the input data rate of a mic" << std::endl
-      << "'Processing time' could be less then actual run time" << std::endl;
+              << "'Processing time' could be less then actual run time" << std::endl;
   }
 
   wav_write.commitFile();
   std::cout << "Output wav file written. " << output_wav << std::endl
-    << "Total " << audio_data.size() << " samples written" << std::endl;
+            << "Total " << audio_data.size() << " samples written" << std::endl;
 
   if (NvAFX_DestroyEffect(handle) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_Release() failed" << std::endl;
@@ -269,22 +358,13 @@ bool DenoiserApp::run(const ConfigReader& config_reader)
   return true;
 }
 
-void ShowHelpAndExit(const char* szBadOption) {
+void ShowHelpAndExit(const char* bad_option) {
   std::ostringstream oss;
-  bool bThrowError = false;
-  if (szBadOption) {
-    bThrowError = false;
-    oss << "Error parsing \"" << szBadOption << "\"" << std::endl;
+  if (bad_option) {
+    oss << "Error parsing \"" << bad_option << "\"" << std::endl;
   }
   std::cout << "Command Line Options:" << std::endl
-    << "-c           Config file" << std::endl;
-
-  if (bThrowError) {
-    throw std::invalid_argument(oss.str());
-  } else {
-    std::cout << oss.str();
-    exit(0);
-  }
+            << "-c Config file" << std::endl;
 }
 
 
@@ -324,7 +404,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  DenoiserApp app;
+  EffectsDemoApp app;
   if (app.run(config_reader))
     return 0;
   else return -1;

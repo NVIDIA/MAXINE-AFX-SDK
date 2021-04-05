@@ -1,3 +1,3 @@
 # Sample apps
-add_subdirectory(denoise_wav)
+add_subdirectory(effects_demo)
 
