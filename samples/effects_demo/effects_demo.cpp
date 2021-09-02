@@ -36,13 +36,36 @@
 
 namespace {
 
+const char kConfigEffectVariable[] = "effect";
+const char kConfigFileInputVariable[] = "input_wav";
+const char kConfigFileOutputVariable[] = "output_wav";
+const char kConfigFileRTVariable[] = "real_time";
+const char kConfigIntensityRatioVariable[] = "intensity_ratio";
+
+/* model */
+const char kConfigFileModelVariable[] = "model";
+} // namespace
+
+class EffectsDemoApp {
+ public:
+  bool run(const ConfigReader& config_reader);
+
+ private:
+  // Validate configuration data.
+  bool validate_config(const ConfigReader& config_reader);
+  // EffectsDemoApp intensity_ratio config
+  float intensity_ratio_ = 1.0f;
+  // inited from configuration
+  bool real_time_ = false;
+};
+
+
 bool ReadWavFile(const std::string& filename, uint32_t expected_sample_rate, std::vector<float>* data,
                  int align_samples) {
   CWaveFileRead wave_file(filename);
   if (wave_file.isValid() == false) {
     return false;
   }
-  const float* raw_data_array = wave_file.GetFloatPCMData();
   std::cout << "Total number of samples: " << wave_file.GetNumSamples() << std::endl;
   std::cout << "Size in bytes: " << wave_file.GetRawPCMDataSizeInBytes() << std::endl;
   std::cout << "Sample rate: " << wave_file.GetSampleRate() << std::endl;
@@ -70,52 +93,14 @@ bool ReadWavFile(const std::string& filename, uint32_t expected_sample_rate, std
   } else {
     data->resize(wave_file.GetNumSamples(), 0.f);
   }
+
+  const float* raw_data_array = wave_file.GetFloatPCMData();
   std::copy(raw_data_array, raw_data_array + wave_file.GetNumSamples(), data->data());
   return true;
 }
 
-const char kConfigEffectVariable[] = "effect";
-const char kConfigSampleRateVariable[] = "sample_rate";
-const char kConfigFileInputVariable[] = "input_wav";
-const char kConfigFileOutputVariable[] = "output_wav";
-const char kConfigFileRTVariable[] = "real_time";
-const char kConfigIntensityRatioVariable[] = "intensity_ratio";
-
-/* model */
-const char kConfigFileModelVariable[] = "model";
-/* allowed sample rates */
-const std::vector<uint32_t> kAllowedSampleRates = { 16000, 48000 };
-} // namespace
-
-class EffectsDemoApp {
- public:
-  bool run(const ConfigReader& config_reader);
-
- private:
-  // Validate configuration data.
-  bool validate_config(const ConfigReader& config_reader);
-  // Sample rate config
-  uint32_t sample_rate_ = 0;
-  // Intensity_ratio config
-  float intensity_ratio_ = 1.0f;
-  // inited from configuration
-  bool real_time_ = false;
-};
-
 bool EffectsDemoApp::validate_config(const ConfigReader& config_reader)
 {
-  std::string sample_rate_str;
-  if (config_reader.GetConfigValue(kConfigSampleRateVariable, &sample_rate_str)) {
-    sample_rate_ = std::strtoul(sample_rate_str.c_str(), nullptr, 0);
-    if (std::find(kAllowedSampleRates.begin(), kAllowedSampleRates.end(), sample_rate_) == kAllowedSampleRates.end()) {
-      std::cerr << "Sample rate " << sample_rate_ << " not supported" << std::endl;
-      return false;
-    }
-  } else {
-    std::cerr << "No " << kConfigSampleRateVariable << " variable found" << std::endl;
-    return false;
-  }
-
   if (config_reader.IsConfigValueAvailable(kConfigEffectVariable) == false) {
     std::cerr << "No " << kConfigEffectVariable << " variable found" << std::endl;
     return false;
@@ -215,20 +200,15 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader)
     return false;
   }*/
 
-  if (NvAFX_SetU32(handle, NVAFX_PARAM_SAMPLE_RATE, sample_rate_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_SetU32(Sample Rate: " << sample_rate_ << ") failed" << std::endl;
-    return false;
-  }
-
-  if (NvAFX_SetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_SetFloat(Intensity Ratio: " << intensity_ratio_ << ") failed" << std::endl;
-    return false;
-  }
   std::string model_file = config_reader.GetConfigValue(kConfigFileModelVariable);
   if (NvAFX_SetString(handle, NVAFX_PARAM_MODEL_PATH, model_file.c_str())
       != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_SetString() failed" << std::endl;
     return false;
+  }
+
+  if (NvAFX_SetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio_) != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_SetFloat(Intensity Ratio: " << intensity_ratio_ << ") failed" << std::endl;
   }
 
   // Another option could be to use cudaGetDeviceCount for num
@@ -251,23 +231,38 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader)
     std::cout << "- " << device <<std::endl;
   }
 
-  std::string input_wav = config_reader.GetConfigValue(kConfigFileInputVariable);
-  std::vector<float> audio_data;
   std::cout << "Loading effect" << " ... ";
   if (NvAFX_Load(handle) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_Load() failed" << std::endl;
     return false;
   }
   std::cout << "Done" << std::endl;
-  unsigned num_channels, num_samples_per_frame;
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_CHANNELS, &num_channels) != NVAFX_STATUS_SUCCESS) {
+  uint32_t input_sample_rate, output_sample_rate;
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_INPUT_SAMPLE_RATE, &input_sample_rate) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
   }
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_SAMPLES_PER_FRAME, &num_samples_per_frame)
-      != NVAFX_STATUS_SUCCESS) {
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_OUTPUT_SAMPLE_RATE, &output_sample_rate) != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_GetU32() failed" << std::endl;
+      return false;
+  }
+
+  unsigned num_input_channels, num_output_channels, num_input_samples_per_frame, num_output_samples_per_frame;
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_INPUT_CHANNELS, &num_input_channels) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
+  }
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_OUTPUT_CHANNELS, &num_output_channels) != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+    return false;
+  }
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_INPUT_SAMPLES_PER_FRAME, &num_input_samples_per_frame) != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+    return false;
+  }
+  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_OUTPUT_SAMPLES_PER_FRAME, &num_output_samples_per_frame) != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_GetU32() failed" << std::endl;
+      return false;
   }
   float intensity_ratio_local;
   if (NvAFX_GetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, &intensity_ratio_local) != NVAFX_STATUS_SUCCESS) {
@@ -275,58 +270,61 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader)
     return false;
   }
 
-  std::cout << "  Effect properties : " << std::endl
-            << "  Channels            : " << num_channels << std::endl
-            << "  Samples per frame   : " << num_samples_per_frame << std::endl
-            << "  Intensity Ratio   : " << intensity_ratio_local << std::endl;
+  std::cout << "  Effect properties          : " << std::endl
+            << "  Input Sample rate          : " << input_sample_rate << std::endl
+            << "  Output Sample rate         : " << output_sample_rate << std::endl
+            << "  Input Channels             : " << num_input_channels << std::endl
+            << "  Output Channels            : " << num_output_channels << std::endl
+            << "  Input Samples per frame    : " << num_input_samples_per_frame << std::endl
+            << "  Output Samples per frame   : " << num_output_samples_per_frame << std::endl
+            << "  Intensity Ratio            : " << intensity_ratio_local << std::endl;
 
-  if (!ReadWavFile(input_wav, sample_rate_, &audio_data, num_samples_per_frame)) {
+  std::string input_wav = config_reader.GetConfigValue(kConfigFileInputVariable);
+  std::vector<float> audio_data;
+  if (!ReadWavFile(input_wav, input_sample_rate, &audio_data, num_input_samples_per_frame)) {
     std::cerr << "Unable to read wav file: " << input_wav << std::endl;
     return false;
   }
   std::cout << "Input wav file: " << input_wav << std::endl
             << "Total " << audio_data.size() << " samples read" << std::endl;
-
-
   std::string output_wav = config_reader.GetConfigValue(kConfigFileOutputVariable);
 
-  CWaveFileWrite wav_write(output_wav, sample_rate_, num_channels, 32, true);
-  float frame_in_secs = static_cast<float>(num_samples_per_frame) / static_cast<float>(sample_rate_);
+  CWaveFileWrite wav_write(output_wav, output_sample_rate, num_output_channels, 32, true);
+  float frame_in_secs = static_cast<float>(num_input_samples_per_frame) / static_cast<float>(input_sample_rate);
   float total_run_time = 0.f;
   float total_audio_duration = 0.f;
   float checkpoint = 0.1f;
-  float expected_audio_duration = static_cast<float>(audio_data.size()) / static_cast<float>(sample_rate_);
-  auto frame = std::make_unique<float[]>(num_samples_per_frame);
+  float expected_audio_duration = static_cast<float>(audio_data.size()) / static_cast<float>(input_sample_rate);
+  auto frame = std::make_unique<float[]>(num_output_samples_per_frame);
 
   std::string progress_bar = "[          ] ";
   std::cout << "Processed: " << progress_bar << "0%\r";
   std::cout.flush();
 
   // wav data is already padded to align to num_samples_per_frame by ReadWavFile()
-  for (size_t offset = 0; offset < audio_data.size(); offset += num_samples_per_frame) {
+  for (size_t offset = 0; offset < audio_data.size(); offset += num_input_samples_per_frame) {
+
+    auto start_tick = std::chrono::high_resolution_clock::now();
     const float* input[1];
     float* output[1];
     input[0] = &audio_data.data()[offset];
     output[0] = frame.get();
-
-    auto start_tick = std::chrono::high_resolution_clock::now();
-    if (NvAFX_Run(handle, input, output, num_samples_per_frame, num_channels) != NVAFX_STATUS_SUCCESS) {
+    if (NvAFX_Run(handle, input, output, num_input_samples_per_frame, num_input_channels) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_Run() failed" << std::endl;
       return false;
     }
-
     auto run_end_tick = std::chrono::high_resolution_clock::now();
     total_run_time += (std::chrono::duration<float>(run_end_tick - start_tick)).count();
     total_audio_duration += frame_in_secs;
 
     if ((total_audio_duration / expected_audio_duration) >= checkpoint) {
-      progress_bar[checkpoint * 10] = '=';
+      progress_bar[(int)(checkpoint * 10.0f)] = '=';
       std::cout << "Processed: " << progress_bar << checkpoint * 100.f << "%" << (checkpoint >= 1 ? "\n" : "\r");
       std::cout.flush();
       checkpoint += 0.1f;
     }
 
-    wav_write.writeChunk(frame.get(), num_samples_per_frame * sizeof(float));
+    wav_write.writeChunk(frame.get(), num_output_samples_per_frame * sizeof(float));
 
     if (real_time_) {
       auto end_tick = std::chrono::high_resolution_clock::now();
@@ -396,18 +394,26 @@ void ParseCommandLine(int argc, char* argv[], std::string* config_file) {
 
 int main(int argc, char *argv[]) {
   std::string config_file;
-  ParseCommandLine(argc, argv, &config_file);
+  try
+  {
+      ParseCommandLine(argc, argv, &config_file);
 
-  ConfigReader config_reader;
-  if (config_reader.Load(config_file) == false) {
-    std::cerr << "Config file load failed" << std::endl;
-    return -1;
+      ConfigReader config_reader;
+      if (config_reader.Load(config_file) == false) {
+          std::cerr << "Config file load failed" << std::endl;
+          return -1;
+      }
+
+      EffectsDemoApp app;
+      if (app.run(config_reader))
+          return 0;
+      else return -1;
   }
-
-  EffectsDemoApp app;
-  if (app.run(config_reader))
-    return 0;
-  else return -1;
+  catch (const std::exception& e)
+  {
+      std::cerr << "Exception Caught : " << e.what() << std::endl;
+  }
+  return 0;
 }
 
 

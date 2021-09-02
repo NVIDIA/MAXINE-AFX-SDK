@@ -159,25 +159,40 @@ NvAFX_Status NVAFX_API NvAFX_GetSupportedDevices(NvAFX_Handle effect, int *num, 
  *
  * @note The input float data is expected to be standard 32-bit float type with values in range [-1.0, +1.0]
  *
- * @param[in]  effect        The effect handle.
- * @param[in]  input         Input float buffer array. It points to an array of buffers where each buffer holds
- *                           audio data for a single channel. Array size should be same as number of channels
- *                           expected by the effect. Also ensure sampling rate is same as expected by the Effect.
- *                           For e.g. for denoiser it should be equal to the value returned by NvAFX_GetU32()
- *                           returned value for NVAFX_FIXED_PARAM_DENOISER_SAMPLE_RATE parameter.
- * @param[out]  output       Output float buffer array. The layout is same as input. It points to an an array of
- *                           buffers where buffer has audio data corresponding to that channel. The buffers have
- *                           to be preallocated by caller. Size of each buffer (i.e. channel) is same as that of
- *                           input.
- * @param[in]  num_samples   The number of samples in the input buffer. After this call returns output will
- *                           have same number of samples.
- * @param[in]  num_channels  The number of channels in the input buffer. The @a input and @a output should point
- *                           to @ num_channels number of buffers, one for each channel.
+ * @param[in]  effect               The effect handle.
+ * @param[in]  input                Input float buffer array. It points to an array of buffers where each buffer holds
+ *                                   audio data for a single channel. Array size should be same as number of
+ *                                   input channels expected by the effect. Also ensure sampling rate is same as
+ *                                   expected by the Effect.
+ *                                   For e.g. for denoiser it should be equal to the value returned by NvAFX_GetU32()
+ *                                   returned value for NVAFX_FIXED_PARAM_DENOISER_SAMPLE_RATE parameter.
+ * @param[out]  output               Output float buffer array. The layout is same as input. It points to an an array of
+ *                                   buffers where buffer has audio data corresponding to that channel. The buffers have
+ *                                   to be preallocated by caller. Size of each buffer (i.e. channel) is same as that of
+ *                                   input. However, number of channels may differ (can be queried by calling
+ *                                   NvAFX_GetU32() with NVAFX_PARAM_NUM_OUTPUT_CHANNELS as parameter).
+ * @param[in]  num_input_samples     The number of samples in the input buffer. After this call returns output
+ *                                   can be determined by calling NvAFX_GetU32() with 
+ *                                   NVAFX_PARAM_NUM_OUTPUT_SAMPLES_PER_FRAME as parameter
+ * @param[in]  num_input_channels    The number of channels in the input buffer. The @a input should point
+ *                                   to @ num_input_channels number of buffers for input, which can be determined by
+ *                                   calling NvAFX_GetU32() with NVAFX_PARAM_NUM_INPUT_CHANNELS as parameter.
  *
  * @return Status values as enumerated in @ref NvAFX_Status
  */
 NvAFX_Status NVAFX_API NvAFX_Run(NvAFX_Handle effect, const float** input, float** output,
-                                 unsigned num_samples, unsigned num_channels);
+                                 unsigned num_samples, unsigned num_input_channels);
+
+/** Reset effect state
+ *
+ * @note Allows the state of an effect to be reset. This operation will reset the state of selected in the next
+ *       NvAFX_Run call
+ *
+ * @param[in]  effect        The effect handle.
+ *
+ * @return Status values as enumerated in @ref NvAFX_Status
+ */
+NvAFX_Status NVAFX_API NvAFX_Reset(NvAFX_Handle effect);
 
 /** Effect selectors. @ref NvAFX_EffectSelector */
 
@@ -191,19 +206,31 @@ NvAFX_Status NVAFX_API NvAFX_Run(NvAFX_Handle effect, const float** input, float
 /** Parameter selectors */
 
 /** Common Effect parameters. */
+/** Number of audio streams in I/O (unsigned int). */
+#define NVAFX_PARAM_NUM_STREAMS "num_streams"
 /** To set if SDK should select the default GPU to run the effects in a Multi-GPU setup(unsigned int).
     Default value is 0. Please see user manual for details.*/
 #define NVAFX_PARAM_USE_DEFAULT_GPU "use_default_gpu"
+/** To be set to '1' if SDK user wants to create and manage own CUDA context. Other users can simply
+    ignore this parameter. Once set to '1' this cannot be unset for that session (unsigned int) rw param 
+    Note: NVAFX_PARAM_USE_DEFAULT_GPU and NVAFX_PARAM_USER_CUDA_CONTEXT cannot be used at the same time */
+#define NVAFX_PARAM_USER_CUDA_CONTEXT "user_cuda_context"
 
 /** Effect parameters. @ref NvAFX_ParameterSelector */
 /** Model path (char*) */
 #define NVAFX_PARAM_MODEL_PATH "model_path"
-/** Sample rate (unsigned int). Currently supported sample rate(s): 48000, 16000 */
-#define NVAFX_PARAM_SAMPLE_RATE "sample_rate"
-/** Number of samples per frame (unsigned int). This is immutable parameter */
-#define NVAFX_PARAM_NUM_SAMPLES_PER_FRAME "num_samples_per_frame"
-/** Number of channels in I/O (unsigned int). This is immutable parameter */
-#define NVAFX_PARAM_NUM_CHANNELS "num_channels"
+/** Input Sample rate (unsigned int). Currently supported sample rate(s): 48000, 16000, 8000 */
+#define NVAFX_PARAM_INPUT_SAMPLE_RATE "input_sample_rate"
+/** Output Sample rate (unsigned int). Currently supported sample rate(s): 48000, 16000 */
+#define NVAFX_PARAM_OUTPUT_SAMPLE_RATE "output_sample_rate"
+/** Number of input samples per frame (unsigned int). This is immutable parameter */
+#define NVAFX_PARAM_NUM_INPUT_SAMPLES_PER_FRAME "num_input_samples_per_frame"
+/** Number of output samples per frame (unsigned int). This is immutable parameter */
+#define NVAFX_PARAM_NUM_OUTPUT_SAMPLES_PER_FRAME "num_output_samples_per_frame"
+/** Number of input audio channels */
+#define NVAFX_PARAM_NUM_INPUT_CHANNELS "num_input_channels"
+/** Number of output audio channels */
+#define NVAFX_PARAM_NUM_OUTPUT_CHANNELS "num_output_channels"
 /** Effect intensity factor (float) */
 #define NVAFX_PARAM_INTENSITY_RATIO "intensity_ratio"
 
@@ -218,6 +245,16 @@ NvAFX_Status NVAFX_API NvAFX_Run(NvAFX_Handle effect, const float** input, float
 #define NVAFX_PARAM_DENOISER_NUM_CHANNELS NVAFX_PARAM_NUM_CHANNELS
 #pragma deprecated(NVAFX_PARAM_DENOISER_INTENSITY_RATIO)
 #define NVAFX_PARAM_DENOISER_INTENSITY_RATIO NVAFX_PARAM_INTENSITY_RATIO
+
+/** Number of audio channels **/
+#pragma deprecated(NVAFX_PARAM_NUM_CHANNELS)
+#define NVAFX_PARAM_NUM_CHANNELS "num_channels"
+/** Sample rate (unsigned int). Currently supported sample rate(s): 48000, 16000 */
+#pragma deprecated(NVAFX_PARAM_SAMPLE_RATE)
+#define NVAFX_PARAM_SAMPLE_RATE "sample_rate"
+/** Number of samples per frame (unsigned int). This is immutable parameter */
+#pragma deprecated(NVAFX_PARAM_NUM_SAMPLES_PER_FRAME)
+#define NVAFX_PARAM_NUM_SAMPLES_PER_FRAME "num_samples_per_frame"
 
 #if defined(__cplusplus)
 }

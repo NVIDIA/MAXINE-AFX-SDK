@@ -39,8 +39,7 @@ set(DENOISER_MODEL_16K %NVAFX_SDK_DIR%/models/denoiser_16k.trtpkg)
 
 # Generate the Denoiser 16k CFG file
 add_custom_command(TARGET effects_demo POST_BUILD
-    COMMAND echo effect denoiser>> ${DENOISER_CFG_FILE_16K}
-    COMMAND echo sample_rate 16000>> ${DENOISER_CFG_FILE_16K}
+    COMMAND echo effect denoiser> ${DENOISER_CFG_FILE_16K}
     COMMAND echo model ${DENOISER_MODEL_16K}>> ${DENOISER_CFG_FILE_16K}
     COMMAND echo input_wav denoiser_input_16k.wav>> ${DENOISER_CFG_FILE_16K}
     COMMAND echo output_wav denoiser_output_16k.wav>> ${DENOISER_CFG_FILE_16K}
@@ -53,8 +52,7 @@ set(DENOISER_MODEL_48K %NVAFX_SDK_DIR%/models/denoiser_48k.trtpkg)
 
 # Generate the Denoiser 48k CFG file
 add_custom_command(TARGET effects_demo POST_BUILD
-    COMMAND echo effect denoiser>> ${DENOISER_CFG_FILE_48K}
-    COMMAND echo sample_rate 48000>> ${DENOISER_CFG_FILE_48K}
+    COMMAND echo effect denoiser> ${DENOISER_CFG_FILE_48K}
     COMMAND echo model ${DENOISER_MODEL_48K}>> ${DENOISER_CFG_FILE_48K}
     COMMAND echo input_wav denoiser_input_48k.wav>> ${DENOISER_CFG_FILE_48K}
     COMMAND echo output_wav denoiser_output_48k.wav>> ${DENOISER_CFG_FILE_48K}
@@ -67,8 +65,7 @@ set(DEREVERB_MODEL_16K %NVAFX_SDK_DIR%/models/dereverb_16k.trtpkg)
 
 # Generate the Dereverb 16k CFG file
 add_custom_command(TARGET effects_demo POST_BUILD
-    COMMAND echo effect dereverb>> ${DEREVERB_CFG_FILE_16K}
-    COMMAND echo sample_rate 16000>> ${DEREVERB_CFG_FILE_16K}
+    COMMAND echo effect dereverb> ${DEREVERB_CFG_FILE_16K}
     COMMAND echo model ${DEREVERB_MODEL_16K}>> ${DEREVERB_CFG_FILE_16K}
     COMMAND echo input_wav dereverb_input_16k.wav>> ${DEREVERB_CFG_FILE_16K}
     COMMAND echo output_wav dereverb_output_16k.wav>> ${DEREVERB_CFG_FILE_16K}
@@ -81,8 +78,7 @@ set(DEREVERB_MODEL_48K %NVAFX_SDK_DIR%/models/dereverb_48k.trtpkg)
 
 # Generate the Dereverb 48k CFG file
 add_custom_command(TARGET effects_demo POST_BUILD
-    COMMAND echo effect dereverb>> ${DEREVERB_CFG_FILE_48K}
-    COMMAND echo sample_rate 48000>> ${DEREVERB_CFG_FILE_48K}
+    COMMAND echo effect dereverb> ${DEREVERB_CFG_FILE_48K}
     COMMAND echo model ${DEREVERB_MODEL_48K}>> ${DEREVERB_CFG_FILE_48K}
     COMMAND echo input_wav dereverb_input_48k.wav>> ${DEREVERB_CFG_FILE_48K}
     COMMAND echo output_wav dereverb_output_48k.wav>> ${DEREVERB_CFG_FILE_48K}
@@ -95,8 +91,7 @@ set(DEREVERB_DENOISER_MODEL_16K %NVAFX_SDK_DIR%/models/dereverb_denoiser_16k.trt
 
 # Generate the Dereverb_Denoiser 16k CFG file
 add_custom_command(TARGET effects_demo POST_BUILD
-    COMMAND echo effect dereverb_denoiser>> ${DEREVERB_DENOISER_CFG_FILE_16K}
-    COMMAND echo sample_rate 16000>> ${DEREVERB_DENOISER_CFG_FILE_16K}
+    COMMAND echo effect dereverb_denoiser> ${DEREVERB_DENOISER_CFG_FILE_16K}
     COMMAND echo model ${DEREVERB_DENOISER_MODEL_16K}>> ${DEREVERB_DENOISER_CFG_FILE_16K}
     COMMAND echo input_wav dereverb_denoiser_input_16k.wav>> ${DEREVERB_DENOISER_CFG_FILE_16K}
     COMMAND echo output_wav dereverb_denoiser_output_16k.wav>> ${DEREVERB_DENOISER_CFG_FILE_16K}
@@ -109,8 +104,7 @@ set(DEREVERB_DENOISER_MODEL_48K %NVAFX_SDK_DIR%/models/dereverb_denoiser_48k.trt
 
 # Generate the Dereverb_Denoiser 48k CFG file
 add_custom_command(TARGET effects_demo POST_BUILD
-    COMMAND echo effect dereverb_denoiser>> ${DEREVERB_DENOISER_CFG_FILE_48K}
-    COMMAND echo sample_rate 48000>> ${DEREVERB_DENOISER_CFG_FILE_48K}
+    COMMAND echo effect dereverb_denoiser> ${DEREVERB_DENOISER_CFG_FILE_48K}
     COMMAND echo model ${DEREVERB_DENOISER_MODEL_48K}>> ${DEREVERB_DENOISER_CFG_FILE_48K}
     COMMAND echo input_wav dereverb_denoiser_input_48k.wav>> ${DEREVERB_DENOISER_CFG_FILE_48K}
     COMMAND echo output_wav dereverb_denoiser_output_48k.wav>> ${DEREVERB_DENOISER_CFG_FILE_48K}

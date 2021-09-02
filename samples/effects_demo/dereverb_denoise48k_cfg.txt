@@ -1,7 +1,5 @@
 # Effect
 effect dereverb_denoiser
-# Sample rate
-sample_rate 48000
 # Noisy+Reverb input file
 input_wav dereverb_denoiser_input_48k.wav
 # Denoised+De-reverbed audio data will be saved to this file.
@@ -14,3 +12,4 @@ real_time 0
 # Intensity Ratio
 intensity_ratio 1.0
 # Point this to the effect file
+
