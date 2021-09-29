@@ -1,0 +1,8 @@
+SDK version 1.0.5 updates
+* Denoiser and Dereverb_Denoiser models updated with emotive noise suppression capabilities
+* Multi GPU support added
+* Added support for CUDA Safe Clocks
+* Readme has pointer to online documentation
+* Branding links updated
+* SDK Programming guide updated
+* Download links updated
