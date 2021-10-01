@@ -22,7 +22,7 @@ set(SDK_INCLUDES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/nvafx/include)
 add_library(NVAudioEffects INTERFACE)
 target_include_directories(NVAudioEffects INTERFACE ${SDK_INCLUDES_PATH})
 target_link_libraries(NVAudioEffects INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/nvafx/lib/NVAudioEffects.lib)
+    ${CMAKE_CURRENT_SOURCE_DIR}/bin/NVAudioEffects.lib)
 
 set(ENABLE_SAMPLES TRUE)
 add_subdirectory(samples)
