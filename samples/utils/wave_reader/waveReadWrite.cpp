@@ -33,6 +33,10 @@ const float * CWaveFileRead::GetFloatPCMData() {
 
   m_floatWaveData.reset(new float[m_nNumSamples]);
   float* outputWaveData = m_floatWaveData.get();
+  if (m_WaveFormatEx.wFormatTag == WAVE_FORMAT_IEEE_FLOAT) {
+    memcpy(outputWaveData, audioDataPtr, m_nNumSamples * sizeof(float));
+    return outputWaveData;
+  }
 
   for (uint32_t i = 0; i < m_nNumSamples; i++)   {
     switch (m_WaveFormatEx.wBitsPerSample)     {
