@@ -1,9 +1,9 @@
 # Effect
-effect dereverb
-# Reverb input file
-input_wav dereverb_input_16k.wav
-# De-reverbed audio data will be saved to this file.
-output_wav dereverb_output_16k.wav
+effect denoiser
+# Noisy input file
+input_wav denoiser_input_16k.wav
+# Denoised audio data will be saved to this file.
+output_wav denoiser_output_16k.wav
 # Set to 1 for real time mode i.e. audio data will be processed 
 # at same speed like that of an audio input device like
 # microphone. Since the denoising is faster that real time, the
@@ -11,4 +11,6 @@ output_wav dereverb_output_16k.wav
 real_time 0
 # Intensity Ratio
 intensity_ratio 1.0
+# Enable VAD
+enable_vad 0
 # Point this to the effect file

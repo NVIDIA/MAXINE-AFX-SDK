@@ -1,6 +1,6 @@
 /*###############################################################################
 #
-# Copyright(c) 2021 NVIDIA CORPORATION.All Rights Reserved.
+# Copyright(c) 2022 NVIDIA CORPORATION.All Rights Reserved.
 #
 # NVIDIA CORPORATION and its licensors retain all intellectual property
 # and proprietary rights to the provided wav files and any modifications
@@ -10,9 +10,29 @@
 ###############################################################################*/
 
 This copyright applies to following wav files:
-1. denoiser_input_16k.wav
-2. denoiser_input_48k.wav
-3. dereverb_input_16k.wav
-4. dereverb_input_48k.wav
-5. dereverb_denoiser_input_16k.wav
-6. dereverb_denoiser_input_48k.wav
+1.  denoiser_input_8k_chain.wav
+2.  dereverb_input_8k_chain.wav
+3.  dereverb_denoiser_input_8k_chain.wav
+4.  denoiser_input_16k_chain.wav
+5.  dereverb_input_16k_chain.wav
+6.  dereverb_denoiser_input_16k_chain.wav	
+7.  denoiser_input_16k_vad.wav
+8.  denoiser_input_48k_vad.wav
+9.  dereverb_denoiser_input_16k_vad.wav
+10. dereverb_denoiser_input_48k_vad.wav
+11. denoiser_input_16k.wav
+12. denoiser_input_48k.wav
+13. dereverb_input_16k.wav
+14. dereverb_input_48k.wav
+15. dereverb_denoiser_input_16k.wav
+16. dereverb_denoiser_input_48k.wav
+17. aec_nearend_input_16k.wav
+18. aec_farend_input_16k.wav
+19. aec_nearend_input_48k.wav
+20. aec_farend_input_48k.wav
+21. aec_nearend_input_16k_1.wav
+22. aec_farend_input_16k_1.wav
+23. aec_nearend_input_48k_1.wav
+24. aec_farend_input_48k_1.wav
+25. superres_input_8k.wav
+26. superres_input_16k.wav

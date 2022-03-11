@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2019, NVIDIA Corporation.  All rights reserved.
+* Copyright (c) 2022, NVIDIA Corporation.  All rights reserved.
 *
 * NVIDIA Corporation and its licensors retain all intellectual property
 * and proprietary rights in and to this software, related documentation
@@ -33,6 +33,10 @@ const float * CWaveFileRead::GetFloatPCMData() {
 
   m_floatWaveData.reset(new float[m_nNumSamples]);
   float* outputWaveData = m_floatWaveData.get();
+  if (m_WaveFormatEx.wFormatTag == WAVE_FORMAT_IEEE_FLOAT) {
+    memcpy(outputWaveData, audioDataPtr, m_nNumSamples * sizeof(float));
+    return outputWaveData;
+  }
 
   for (uint32_t i = 0; i < m_nNumSamples; i++)   {
     switch (m_WaveFormatEx.wBitsPerSample)     {

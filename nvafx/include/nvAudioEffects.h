@@ -1,6 +1,6 @@
 /*###############################################################################
 #
-# Copyright 2020 NVIDIA Corporation
+# Copyright 2022 NVIDIA Corporation
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -72,6 +72,11 @@ typedef enum {
   NVAFX_STATUS_GPU_UNSUPPORTED = 11
 } NvAFX_Status;
 
+/** Bool type (stdbool is available only with C99) */
+#define NVAFX_TRUE 1
+#define NVAFX_FALSE 0
+typedef char NvAFX_Bool;
+
 /** We use strings as effect selectors */
 typedef const char* NvAFX_EffectSelector;
 
@@ -101,6 +106,15 @@ NvAFX_Status NVAFX_API NvAFX_GetEffectList(int* num_effects, NvAFX_EffectSelecto
  */
 NvAFX_Status NVAFX_API NvAFX_CreateEffect(NvAFX_EffectSelector code, NvAFX_Handle* effect);
 
+/** @brief Create a new instance of an audio effect.
+ *
+ * @param[in] code   The selector code for the desired chained audio Effect.
+ * @param[out] effect   A handle to the Audio Effect instantiation.
+ *
+ * @return Status values as enumerated in @ref NvAFX_Status
+ */
+NvAFX_Status NVAFX_API NvAFX_CreateChainedEffect(NvAFX_EffectSelector code, NvAFX_Handle* effect);
+
 /** @brief Delete a previously instantiated audio Effect.
  *
  * @param[in]  effect A handle to the audio Effect to be deleted.
@@ -118,8 +132,11 @@ NvAFX_Status NVAFX_API NvAFX_DestroyEffect(NvAFX_Handle effect);
  * @return Status values as enumerated in @ref NvAFX_Status
  */
 NvAFX_Status NVAFX_API NvAFX_SetU32(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, unsigned int val);
+NvAFX_Status NVAFX_API NvAFX_SetU32List(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, unsigned int* val, unsigned int size);
 NvAFX_Status NVAFX_API NvAFX_SetString(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, const char* val);
+NvAFX_Status NVAFX_API NvAFX_SetStringList(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, const char** val, unsigned int size);
 NvAFX_Status NVAFX_API NvAFX_SetFloat(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, float val);
+NvAFX_Status NVAFX_API NvAFX_SetFloatList(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, float* val, unsigned int size);
 
 /** Get the value of the selected parameter (unsigned int, char*)
 *
@@ -133,7 +150,10 @@ NvAFX_Status NVAFX_API NvAFX_SetFloat(NvAFX_Handle effect, NvAFX_ParameterSelect
 NvAFX_Status NVAFX_API NvAFX_GetU32(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, unsigned int* val);
 NvAFX_Status NVAFX_API NvAFX_GetString(NvAFX_Handle effect, NvAFX_ParameterSelector param_name,
                                        char* val, int max_length);
+NvAFX_Status NVAFX_API NvAFX_GetStringList(NvAFX_Handle effect, NvAFX_ParameterSelector param_name,
+                                       char** val, int* max_length, unsigned int size);
 NvAFX_Status NVAFX_API NvAFX_GetFloat(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, float* val);
+NvAFX_Status NVAFX_API NvAFX_GetFloatList(NvAFX_Handle effect, NvAFX_ParameterSelector param_name, float* val, unsigned int size);
 
 /** Load the Effect based on the set params.
  *
@@ -181,7 +201,7 @@ NvAFX_Status NVAFX_API NvAFX_GetSupportedDevices(NvAFX_Handle effect, int *num, 
  * @return Status values as enumerated in @ref NvAFX_Status
  */
 NvAFX_Status NVAFX_API NvAFX_Run(NvAFX_Handle effect, const float** input, float** output,
-                                 unsigned num_samples, unsigned num_input_channels);
+                                 unsigned num_input_samples, unsigned num_input_channels);
 
 /** Reset effect state
  *
@@ -202,6 +222,17 @@ NvAFX_Status NVAFX_API NvAFX_Reset(NvAFX_Handle effect);
 #define NVAFX_EFFECT_DEREVERB "dereverb"
 /** Dereverb Denoiser Effect */
 #define NVAFX_EFFECT_DEREVERB_DENOISER "dereverb_denoiser"
+/** Acoustic Echo Cancellation Effect */
+#define NVAFX_EFFECT_AEC "aec"
+/** Super-resolution Effect */
+#define NVAFX_EFFECT_SUPERRES "superres"
+
+#define NVAFX_CHAINED_EFFECT_DENOISER_16k_SUPERRES_16k_TO_48k "denoiser16k_superres16kto48k"
+#define NVAFX_CHAINED_EFFECT_DEREVERB_16k_SUPERRES_16k_TO_48k "dereverb16k_superres16kto48k"
+#define NVAFX_CHAINED_EFFECT_DEREVERB_DENOISER_16k_SUPERRES_16k_TO_48k "dereverb_denoiser16k_superres16kto48k"
+#define NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DENOISER_16k "superres8kto16k_denoiser16k"
+#define NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_16k "superres8kto16k_dereverb16k"
+#define NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_DENOISER_16k "superres8kto16k_dereverb_denoiser16k"
 
 /** Parameter selectors */
 
@@ -215,7 +246,11 @@ NvAFX_Status NVAFX_API NvAFX_Reset(NvAFX_Handle effect);
     ignore this parameter. Once set to '1' this cannot be unset for that session (unsigned int) rw param 
     Note: NVAFX_PARAM_USE_DEFAULT_GPU and NVAFX_PARAM_USER_CUDA_CONTEXT cannot be used at the same time */
 #define NVAFX_PARAM_USER_CUDA_CONTEXT "user_cuda_context"
-
+/** To be set to '1' if SDK user wants to disable cuda graphs. Other users can simply ignore this parameter.
+Using Cuda Graphs helps to reduce the inference between GPU and CPU which makes operations quicker.*/
+#define NVAFX_PARAM_DISABLE_CUDA_GRAPH "disable_cuda_graph"
+/** To be set to '1' if SDK user wants to enable VAD */
+#define NVAFX_PARAM_ENABLE_VAD "enable_vad"
 /** Effect parameters. @ref NvAFX_ParameterSelector */
 /** Model path (char*) */
 #define NVAFX_PARAM_MODEL_PATH "model_path"

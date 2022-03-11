@@ -1,9 +1,11 @@
 # Effect
-effect dereverb
-# Reverb input file
-input_wav dereverb_input_16k.wav
-# De-reverbed audio data will be saved to this file.
-output_wav dereverb_output_16k.wav
+effect aec
+# Near End input file
+input_wav aec_nearend_input_16k.wav
+# Far End input file
+input_farend_wav aec_farend_input_16k.wav
+# Effect applied audio data will be saved to this file.
+output_wav aec_output_16k.wav
 # Set to 1 for real time mode i.e. audio data will be processed 
 # at same speed like that of an audio input device like
 # microphone. Since the denoising is faster that real time, the

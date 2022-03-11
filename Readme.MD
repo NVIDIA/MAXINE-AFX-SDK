@@ -6,15 +6,17 @@ NVIDIA MAXINE AFX SDK provides various audio effects for broadcast use cases wit
 1. Background Noise Suppression (Denoising)
 2. Room Echo Cancellation  (Dereverb)
 3. Room Echo Cancellation + Background Noise Suppression (Dereverb + Denoiser)
+4. Acoustic Echo Cancellation (AEC)
+5. Audio Super Resolution (SR)
 
 The SDK is powered by NVIDIA RTX graphics processor units (GPUs) with Tensor Cores, thus the algorithm throughput is greatly accelerated, and the latency is reduced.
 
 NVIDIA MAXINE AFX SDK is distributed in the following parts:
 
--  This open source repository that includes the [SDK API](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.0.5/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.0.5/samples).
-- An installer hosted on [NVIDIA MAXINE End-user Redistributables Page](https://www.nvidia.com/broadcast-sdk-resources) that installs the SDK DLLs, the models, and the SDK dependency libraries.
+-  This open source repository that includes the [SDK API](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.0/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.0/samples).
+- An installer hosted on [NVIDIA MAXINE developer page](https://www.nvidia.com/broadcast-sdk-resources) that installs the SDK DLLs, the models, and the SDK dependency libraries.
 
-Please refer to the [SDK programming guide](https://docs.nvidia.com/deeplearning/maxine/audio-effects-sdk-windows/index.html) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA MAXINE Audio Effects SDK](https://developer.nvidia.com/maxine-getting-started) webpage for more information about the SDK.
+Please refer to the [SDK programming guide](https://github.com/NVIDIA/MAXINE-AFX-SDK/blob/v1.0/NVIDIA%20Audio%20Effects%20SDK%20Programming%20Guide.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA MAXINE Audio Effects SDK](https://developer.nvidia.com/maxine-getting-started) webpage for more information about the SDK.
 
 ## System requirements
 The SDK is supported on NVIDIA GPUs with Tensor Cores.
