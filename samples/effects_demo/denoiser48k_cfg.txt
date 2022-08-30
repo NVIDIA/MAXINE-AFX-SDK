@@ -1,9 +1,13 @@
 # Effect
+# Supported values are: denoiser/dereverb/dereverb_denoiser/aec/superres
 effect denoiser
 # Noisy input file
-input_wav denoiser_input_48k.wav
+# 48k Input file is picked from denoiser folder. 
+# User can modify below line to pick their own file as input.
+input_wav input_files\denoiser\48k\Air_Conditioning_48k.wav
 # Denoised audio data will be saved to this file.
-output_wav denoiser_output_48k.wav
+# Output can be dumped at user specifid location too. In this case, Output will be saved to current folder.
+output_wav Air_Conditioning_48k_OUT.wav
 # Set to 1 for real time mode i.e. audio data will be processed 
 # at same speed like that of an audio input device like
 # microphone. Since the denoising is faster that real time, the

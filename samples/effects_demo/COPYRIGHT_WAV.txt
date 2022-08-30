@@ -10,29 +10,88 @@
 ###############################################################################*/
 
 This copyright applies to following wav files:
-1.  denoiser_input_8k_chain.wav
-2.  dereverb_input_8k_chain.wav
-3.  dereverb_denoiser_input_8k_chain.wav
-4.  denoiser_input_16k_chain.wav
-5.  dereverb_input_16k_chain.wav
-6.  dereverb_denoiser_input_16k_chain.wav	
-7.  denoiser_input_16k_vad.wav
-8.  denoiser_input_48k_vad.wav
-9.  dereverb_denoiser_input_16k_vad.wav
-10. dereverb_denoiser_input_48k_vad.wav
-11. denoiser_input_16k.wav
-12. denoiser_input_48k.wav
-13. dereverb_input_16k.wav
-14. dereverb_input_48k.wav
-15. dereverb_denoiser_input_16k.wav
-16. dereverb_denoiser_input_48k.wav
-17. aec_nearend_input_16k.wav
-18. aec_farend_input_16k.wav
-19. aec_nearend_input_48k.wav
-20. aec_farend_input_48k.wav
-21. aec_nearend_input_16k_1.wav
-22. aec_farend_input_16k_1.wav
-23. aec_nearend_input_48k_1.wav
-24. aec_farend_input_48k_1.wav
-25. superres_input_8k.wav
-26. superres_input_16k.wav
+├───aec
+│   ├───16k
+│   │   ├───farend
+│   │   │       farend_16k.wav
+│   │   │       farend_16k_2.wav
+│   │   │
+│   │   └───nearend
+│   │           nearend_16k.wav
+│   │           nearend_16k_2.wav
+│   │
+│   └───48k
+│       ├───farend
+│       │       farend_48k.wav
+│       │
+│       └───nearend
+│               nearend_48k.wav
+│
+├───chaining
+│   ├───denoiser
+│   │   ├───16k
+│   │   │       Chip_Bag_16k.wav
+│   │   │       Typing_16k.wav
+│   │   │
+│   │   └───8k
+│   │           Chip_Bag_8k.wav
+│   │           Typing_8k.wav
+│   │
+│   ├───dereverb
+│   │   ├───16k
+│   │   │       Echo_Craig_16k.wav
+│   │   │
+│   │   └───8k
+│   │           Echo_Craig_8k.wav
+│   │
+│   └───dereverb_denoiser
+│       ├───16k
+│       │       Craig_Echo_ChipBag_16k.wav
+│       │
+│       └───8k
+│               Air_Conditioning_8k.wav
+│
+├───denoiser
+│   ├───16k
+│   │       Air_Conditioning_16k.wav
+│   │       Chip_Bag_16k.wav
+│   │       Fan_16k.wav
+│   │       Typing_16k.wav
+│   │       VAD_Rain_16k.wav
+│   │
+│   └───48k
+│           Air_Conditioning_48k.wav
+│           Chip_Bag_48k.wav
+│           Fan_48k.wav
+│           Typing_48k.wav
+│           VAD_Rain_48k.wav
+│
+├───dereverb
+│   ├───16k
+│   │       Echo_Craig_16k.wav
+│   │
+│   └───48k
+│           Echo_Craig_48k.wav
+│
+├───dereverb_denoiser
+│   ├───16k
+│   │       Echo_AirConditioner_16k.wav
+│   │       Echo_Fan_16k.wav
+│   │       VAD_Echo_Fan.wav
+│   │       VAD_Echo_Typing.wav
+│   │
+│   └───48k
+│           Echo_AirConditioner_48k.wav
+│           VAD_Echo_Fan.wav
+│           VAD_Echo_Typing.wav
+│
+└───superres
+    ├───16k
+    │       superres_16k.wav
+    │       superres_16k_2.wav
+    │       superres_16k_3.wav
+    │
+    └───8k
+            superres_8k.wav
+            superres_8k_2.wav
+            superres_8k_3.wav

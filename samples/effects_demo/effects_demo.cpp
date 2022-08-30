@@ -21,7 +21,6 @@
 #
 ###############################################################################*/
 
-
 #include <cstring>
 #include <iostream>
 #include <iomanip>
@@ -38,15 +37,14 @@
 
 namespace {
 
-  const char kConfigEffectVariable[] = "effect";
-  const char kConfigFileInputVariable[] = "input_wav";
-  const char kConfigFileInputFarEndVariable[] = "input_farend_wav";
-  const char kConfigFileOutputVariable[] = "output_wav";
-  const char kConfigFileRTVariable[] = "real_time";
-  const char kConfigIntensityRatioVariable[] = "intensity_ratio";
-  const char kConfigVadEnable[] = "enable_vad";
-  /* model */
-  const char kConfigFileModelVariable[] = "model";
+const char kConfigEffectVariable[] = "effect";
+const char kConfigFileInputVariable[] = "input_wav";
+const char kConfigFileInputFarEndVariable[] = "input_farend_wav";
+const char kConfigFileOutputVariable[] = "output_wav";
+const char kConfigFileRTVariable[] = "real_time";
+const char kConfigIntensityRatioVariable[] = "intensity_ratio";
+const char kConfigVadEnable[] = "enable_vad";
+const char kConfigFileModelVariable[] = "model";
 
 } // namespace
 
@@ -65,9 +63,9 @@ std::vector<std::string> GetList(std::string effect, const char delimeter[] = ",
 }
 
 class EffectsDemoApp {
-public:
+ public:
   bool run(const ConfigReader& config_reader, std::unordered_map<std::string, std::vector<std::string>>& map);
-private:
+ private:
   // Validate configuration data.
   bool validate_config(const ConfigReader& config_reader, std::unordered_map<std::string, std::vector<std::string>>& map);
   bool chaining_run(const ConfigReader& config_reader,std::unordered_map<std::string, std::vector<std::string>>& map);
@@ -138,7 +136,7 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
     return false;
   }
   std::cout << "Input wav file: " << input_wav << std::endl
-    << "Total " << audio_data.size() << " samples read" << std::endl;
+            << "Total " << audio_data.size() << " samples read" << std::endl;
 
   std::vector<float> farend_audio_data;
   if (is_aec_) {
@@ -148,24 +146,32 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
       return false;
     }
     std::cout << "Input wav file: " << input_farend_wav << std::endl
-      << "Total " << farend_audio_data.size() << " samples read" << std::endl;
+              << "Total " << farend_audio_data.size() << " samples read" << std::endl;
   }
   std::string output_wav = config_reader.GetConfigValue(kConfigFileOutputVariable);
 
   CWaveFileWrite wav_write(output_wav, output_sample_rate_, num_output_channels_, 32, true);
+
   float frame_in_secs = static_cast<float>(num_input_samples_per_frame_) / static_cast<float>(input_sample_rate_);
   float total_run_time = 0.f;
   float total_audio_duration = 0.f;
   float checkpoint = 0.1f;
   float expected_audio_duration = static_cast<float>(audio_data.size()) / static_cast<float>(input_sample_rate_);
   auto frame = std::make_unique<float[]>(num_output_samples_per_frame_);
-
+  
   std::string progress_bar = "[          ] ";
   std::cout << "Processed: " << progress_bar << "0%\r";
   std::cout.flush();
 
+  size_t final_audio_size = audio_data.size();
+  //Taking the min size of farend and nearend if their sizes mismatch
+  if (is_aec_) {
+    if (audio_data.size() != farend_audio_data.size()) {
+      final_audio_size = std::min(audio_data.size(), farend_audio_data.size());
+    }
+  }
   // wav data is already padded to align to num_samples_per_frame by ReadWavFile()
-  for (size_t offset = 0; offset < audio_data.size(); offset += num_input_samples_per_frame_) {
+  for (size_t offset = 0; offset < final_audio_size; offset += num_input_samples_per_frame_) {
     auto start_tick = std::chrono::high_resolution_clock::now();
     if (is_aec_) {
       const float* input[2];
@@ -177,8 +183,7 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
         std::cerr << "NvAFX_Run() failed" << std::endl;
         return false;
       }
-    }
-    else {
+    } else {
       const float* input[1];
       float* output[1];
       input[0] = &audio_data.data()[offset];
@@ -200,7 +205,7 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
       checkpoint += 0.1f;
     }
 
-    wav_write.writeChunk(frame.get(), num_output_samples_per_frame_ * sizeof(float));
+      wav_write.writeChunk(frame.get(), num_output_samples_per_frame_ * sizeof(float));
 
     if (real_time_) {
       auto end_tick = std::chrono::high_resolution_clock::now();
@@ -211,26 +216,28 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
   }
 
   std::cout << "Processing time " << std::setprecision(2) << total_run_time
-    << " secs for " << total_audio_duration << std::setprecision(2)
-    << " secs audio file (" << total_run_time / total_audio_duration
-    << " secs processing time per sec of audio)" << std::endl;
+            << " secs for " << total_audio_duration << std::setprecision(2)
+            << " secs audio file (" << total_run_time / total_audio_duration
+            << " secs processing time per sec of audio)" << std::endl;
 
   if (real_time_) {
     std::cout << "Note: App ran in real time mode i.e. simulated the input data rate of a mic" << std::endl
-      << "'Processing time' could be less then actual run time" << std::endl;
+              << "'Processing time' could be less then actual run time" << std::endl;
   }
 
   wav_write.commitFile();
-  std::cout << "Output wav file written. " << output_wav << std::endl
-    << "Total " << audio_data.size() << " samples written" << std::endl;
+    std::cout << "Output wav file written. " << output_wav << std::endl
+              << "Total " << audio_data.size() << " samples written"
+              << std::endl;
 
   if (NvAFX_DestroyEffect(handle_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_Release() failed" << std::endl;
+    std::cerr << "NvAFX_DestroyEffect() failed" << std::endl;
     return false;
   }
 
   return true;
 }
+
 bool EffectsDemoApp::validate_config(const ConfigReader& config_reader, std::unordered_map<std::string, std::vector<std::string>>& map)
 {
   if (config_reader.IsConfigValueAvailable(kConfigEffectVariable) == false) {
@@ -301,23 +308,28 @@ bool EffectsDemoApp::validate_config(const ConfigReader& config_reader, std::uno
   }
 
   std::string intensity_ratio;
-  if (config_reader.GetConfigValue(kConfigIntensityRatioVariable, &intensity_ratio) == false) {
-    std::cerr << "No " << kConfigIntensityRatioVariable << " variable found" << std::endl;
+  if (config_reader.GetConfigValue(kConfigIntensityRatioVariable,
+                                    &intensity_ratio) == false) {
+    std::cerr << "No " << kConfigIntensityRatioVariable << " variable found"
+              << std::endl;
     return false;
   }
   map[kConfigIntensityRatioVariable] = GetList(intensity_ratio);
 
-  //Intensity Ratio Checking
- for(int i = 0; i < map[kConfigFileModelVariable].size() ; i++) {
-   float intensity_ratio_local = std::strtof(map[kConfigIntensityRatioVariable][i].c_str(), nullptr);
-   intensity_ratio_ = intensity_ratio_local;
-  if (intensity_ratio_local < 0.0f || intensity_ratio_local > 1.0f) {
-    std::cerr << kConfigIntensityRatioVariable << " not supported" << std::endl;
-    return false;
+  // Intensity Ratio Checking
+  for (int i = 0; i < map[kConfigFileModelVariable].size(); i++) {
+    float intensity_ratio_local =
+        std::strtof(map[kConfigIntensityRatioVariable][i].c_str(), nullptr);
+    intensity_ratio_ = intensity_ratio_local;
+    if (intensity_ratio_local < 0.0f || intensity_ratio_local > 1.0f) {
+      std::cerr << kConfigIntensityRatioVariable << " not supported"
+                << std::endl;
+      return false;
+    }
   }
-}
   return true;
 }
+
 bool EffectsDemoApp::chaining_run(const ConfigReader& config_reader,std::unordered_map<std::string, std::vector<std::string>>& map)
 {
   NvAFX_Handle chained_handle = nullptr;
@@ -327,50 +339,44 @@ bool EffectsDemoApp::chaining_run(const ConfigReader& config_reader,std::unorder
       std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "dereverb16k_superres16kto48k") == 0) {
+  } else if (strcmp(effect.c_str(), "dereverb16k_superres16kto48k") == 0) {
     if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DEREVERB_16k_SUPERRES_16k_TO_48k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "dereverb_denoiser16k_superres16kto48k") == 0) {
+  } else if (strcmp(effect.c_str(), "dereverb_denoiser16k_superres16kto48k") == 0) {
     if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DEREVERB_DENOISER_16k_SUPERRES_16k_TO_48k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "superres8kto16k_denoiser16k") == 0) {
+  } else if (strcmp(effect.c_str(), "superres8kto16k_denoiser16k") == 0) {
     if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DENOISER_16k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "superres8kto16k_dereverb16k") == 0) {
+  } else if (strcmp(effect.c_str(), "superres8kto16k_dereverb16k") == 0) {
     if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_16k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "superres8kto16k_dereverb_denoiser16k") == 0) {
+  } else if (strcmp(effect.c_str(), "superres8kto16k_dereverb_denoiser16k") == 0) {
     if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_DENOISER_16k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
       return false;
     }
-  }
-  else {
+  } else {
     std::cerr << "NvAFX_CreateChainedEffect() failed. Invalid Effect Value : " << effect << std::endl;
     return false;
   }
   const char* model[] = {map[kConfigFileModelVariable][0].c_str(), map[kConfigFileModelVariable][1].c_str()};
 
   if (NvAFX_SetStringList(chained_handle, NVAFX_PARAM_MODEL_PATH, model, map[kConfigFileModelVariable].size())
-    != NVAFX_STATUS_SUCCESS) {
+      != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_SetStringList() failed" << std::endl;
     return false;
   }
   float intensity_ratio[2] = { std::strtof(map[kConfigIntensityRatioVariable][0].c_str(), nullptr),
-    std::strtof(map[kConfigIntensityRatioVariable][1].c_str(), nullptr) };
+                               std::strtof(map[kConfigIntensityRatioVariable][1].c_str(), nullptr) };
 
   if (NvAFX_SetFloatList(chained_handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio, map[kConfigFileModelVariable].size()) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_SetFloatList(Intensity Ratio: " << intensity_ratio_ << ") failed" << std::endl;
@@ -426,10 +432,8 @@ bool EffectsDemoApp::chaining_run(const ConfigReader& config_reader,std::unorder
   return (generate_output(config_reader, chained_handle));
 }
 
-
 bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<std::string, std::vector<std::string>>& map)
 {
-
   if (validate_config(config_reader, map) == false)
     return false;
 
@@ -447,8 +451,7 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
   for (int i = 0; i < num_effects; ++i) {
     std::cout << "(" << i + 1 << ") " << effects[i] << std::endl;
   }
-
-  //Checking for Chaining
+  // Checking for Chaining
   if (map[kConfigFileModelVariable].size() == 2) {
     return chaining_run(config_reader,map);
   }
@@ -460,32 +463,27 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
       std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "dereverb") == 0) {
+  } else if (strcmp(effect.c_str(), "dereverb") == 0) {
     if (NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB, &handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "dereverb_denoiser") == 0) {
+  } else if (strcmp(effect.c_str(), "dereverb_denoiser") == 0) {
     if (NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB_DENOISER, &handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "aec") == 0) {
+  } else if (strcmp(effect.c_str(), "aec") == 0) {
     if (NvAFX_CreateEffect(NVAFX_EFFECT_AEC, &handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
       return false;
     }
-  }
-  else if (strcmp(effect.c_str(), "superres") == 0) {
+  } else if (strcmp(effect.c_str(), "superres") == 0) {
     if (NvAFX_CreateEffect(NVAFX_EFFECT_SUPERRES, &handle) != NVAFX_STATUS_SUCCESS) {
       std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
       return false;
     }
-  }
-  else {
+  } else {
     std::cerr << "NvAFX_CreateEffect() failed. Invalid Effect Value : " << effect << std::endl;
     return false;
   }
@@ -509,11 +507,11 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
     std::cerr << "NvAFX_SetFloat(Intensity Ratio: " << intensity_ratio_ << ") failed" << std::endl;
   }
 
-  //Enabling VAD based on SDK user input!
+  // Enabling VAD based on SDK user input!
   if (NvAFX_SetU32(handle, NVAFX_PARAM_ENABLE_VAD, vad_supported_) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "Could not initialize VAD" << std::endl;
   }
-
+  
   // Another option could be to use cudaGetDeviceCount for num
   int num_supported_devices = 0;
   if (NvAFX_GetSupportedDevices(handle, &num_supported_devices, nullptr) != NVAFX_STATUS_OUTPUT_BUFFER_TOO_SMALL) {
@@ -540,6 +538,7 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
     return false;
   }
   std::cout << "Done" << std::endl;
+
   if (NvAFX_GetU32(handle, NVAFX_PARAM_INPUT_SAMPLE_RATE, &input_sample_rate_) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
@@ -548,7 +547,6 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
   }
-
   if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_INPUT_CHANNELS, &num_input_channels_) != NVAFX_STATUS_SUCCESS) {
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
@@ -565,10 +563,11 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
     std::cerr << "NvAFX_GetU32() failed" << std::endl;
     return false;
   }
+
   unsigned vad_enabled_local;
   if (NvAFX_GetU32(handle, NVAFX_PARAM_ENABLE_VAD, &vad_enabled_local) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
-    return false;
+      std::cerr << "NvAFX_GetU32() failed" << std::endl;
+      return false;
   }
   float intensity_ratio_local;
   if (NvAFX_GetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, &intensity_ratio_local) != NVAFX_STATUS_SUCCESS) {
@@ -595,7 +594,7 @@ void ShowHelpAndExit(const char* bad_option) {
     oss << "Error parsing \"" << bad_option << "\"" << std::endl;
   }
   std::cout << "Command Line Options:" << std::endl
-    << "-c Config file" << std::endl;
+            << "-c Config file" << std::endl;
 }
 
 
