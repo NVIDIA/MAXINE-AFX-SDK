@@ -13,10 +13,10 @@ The SDK is powered by NVIDIA RTX graphics processor units (GPUs) with Tensor Cor
 
 NVIDIA MAXINE AFX SDK is distributed in the following parts:
 
-- This open source repository that includes the [SDK API](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.2.0/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.2.0/samples).
+-  This open source repository that includes the [SDK API](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.3.0/nvafx), and [sample applications and their dependency libraries](https://github.com/NVIDIA/MAXINE-AFX-SDK/tree/v1.3.0/samples).
 - An installer hosted on [NVIDIA MAXINE developer page](https://www.nvidia.com/broadcast-sdk-resources) that installs the SDK DLLs, the models, and the SDK dependency libraries.
 
-Please refer to the [SDK programming guide](https://docs.nvidia.com/deeplearning/maxine/pdf/audio-effects-sdk.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA MAXINE Audio Effects SDK](https://developer.nvidia.com/maxine-getting-started) webpage for more information about the SDK.
+Please refer to the [SDK programming guide](https://github.com/NVIDIA/MAXINE-AFX-SDK/blob/v1.0/NVIDIA%20Audio%20Effects%20SDK%20Programming%20Guide.pdf) for configuring and integrating the SDK, compiling and running the sample applications. Please visit the [NVIDIA MAXINE Audio Effects SDK](https://developer.nvidia.com/maxine-getting-started) webpage for more information about the SDK.
 
 ## System requirements
 The SDK is supported on NVIDIA GPUs with Tensor Cores.

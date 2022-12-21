@@ -31,34 +31,53 @@ set /A real_time=0
 set /A enable_vad=0
 
 @rem Supported effects with sample rates
-if %effect%==denoiser          goto validate_sample_rates
-if %effect%==dereverb          goto validate_sample_rates
-if %effect%==dereverb_denoiser goto validate_sample_rates
-if %effect%==aec               goto validate_sample_rates
-if %effect%==superres          goto valid_superres_sample_rates
+if %effect%==denoiser           goto validate_sample_rates
+if %effect%==dereverb           goto validate_sample_rates
+if %effect%==dereverb_denoiser  goto validate_sample_rates
+if %effect%==aec                goto validate_sample_rates
+if %effect%==superres           goto valid_superres_sample_rates
 goto invalid_effect
+
+:validate_16k_sample_rates
+@rem Validate Input and Output Sample Rates
+if %input_sample_rate%==16k if %output_sample_rate%==16k (
+	goto valid_single_effect
+) else (
+	goto invalid_effect
+)
+if %input_sample_rate%==48k if %output_sample_rate%==48k (
+	goto invalid_effect
+)
 
 :validate_sample_rates
 @rem Validate Input and Output Sample Rates
 if %input_sample_rate%==16k if %output_sample_rate%==16k (
-		goto valid_single_effect
-	)
+	goto valid_single_effect
+) else (
+	goto invalid_effect
+)
 if %input_sample_rate%==48k if %output_sample_rate%==48k (
-		goto valid_single_effect
-	)
+	goto valid_single_effect
+) else (
+	goto invalid_effect
+)
 
 :valid_superres_sample_rates
-if %effect%==superres (
-	if %input_sample_rate%==8k if %output_sample_rate%==16k (
+if %input_sample_rate%==8k (
+	if %output_sample_rate%==16k (
 		goto valid_single_effect
 	)
-	if %input_sample_rate%==16k if %output_sample_rate%==48k (
+	if %output_sample_rate%==48k (
 		goto valid_single_effect
 	)
-	if %input_sample_rate%==8k if %output_sample_rate%==48k (
-		goto valid_single_effect
-	)
+	goto invalid_effect
 )
+if %input_sample_rate%==16k if %output_sample_rate%==48k (
+	goto valid_single_effect
+) else (
+	goto invalid_effect
+)
+
 :invalid_effect
 if [%4]==[] (goto single_effect_not_supported) else (goto chain_effect_not_supported)
 
@@ -78,7 +97,7 @@ set input_folder=input_files\%effect%\%input_sample_rate%
 
 @rem Generate output folder
 if %effect%==superres (
-	set output_folder=output_files\%effect%\%input_sample_rate%kto%output_sample_rate%
+	set output_folder=output_files\%effect%\%input_sample_rate%to%output_sample_rate%
 ) else (
 	set output_folder=output_files\%effect%\%output_sample_rate%
 )
@@ -176,27 +195,33 @@ set intensity_ratio_2=1.0
 @rem Supported chains
 @rem Generate input and output folders
 
+set input_folder=input_files\chaining\%effect%_%input_sample_rate%_%effect_2%_%output_sample_rate_2%
+
+if %effect_2%==denoiser if %input_sample_rate_2%==48k if %output_sample_rate_2%==48k (
+	if %input_sample_rate%==48k if %output_sample_rate%==48k (
+		goto chain_effect_not_supported
+	)
+)
+if %effect_2%==denoiser if %input_sample_rate_2%==16k if %output_sample_rate_2%==16k (
+	if %input_sample_rate%==16k if %output_sample_rate%==16k (
+		goto chain_effect_not_supported
+	)
+)
 if %effect_2%==superres if %input_sample_rate_2%==16k if %output_sample_rate_2%==48k (
 	if %input_sample_rate%==16k if %output_sample_rate%==16k (
-		if %effect%==denoiser goto valid_chain_1
-		if %effect%==dereverb  goto valid_chain_1
-		if %effect%==dereverb_denoiser  goto valid_chain_1
+		if %effect%==denoiser goto valid_chain_effect
+		if %effect%==dereverb  goto valid_chain_effect
+		if %effect%==dereverb_denoiser  goto valid_chain_effect
 		goto chain_effect_not_supported
-		:valid_chain_1
-		set input_folder=input_files\chaining\%effect%\%input_sample_rate%
-		goto valid_chain_effect
 	)
 )
 
 if %effect%==superres if %input_sample_rate%==8k if %output_sample_rate%==16k (
 	if %input_sample_rate_2%==16k if %output_sample_rate_2%==16k (
-		if %effect_2%==denoiser goto valid_chain_2
-		if %effect_2%==dereverb  goto valid_chain_2
-		if %effect_2%==dereverb_denoiser  goto valid_chain_2
+		if %effect_2%==denoiser goto valid_chain_effect
+		if %effect_2%==dereverb  goto valid_chain_effect
+		if %effect_2%==dereverb_denoiser  goto valid_chain_effect
 		goto chain_effect_not_supported
-		:valid_chain_2
-		set input_folder=input_files\chaining\%effect_2%\%input_sample_rate%
-		goto valid_chain_effect
 	)
 )
 goto chain_effect_not_supported
@@ -204,11 +229,12 @@ goto chain_effect_not_supported
 :valid_chain_effect
 @rem Generate model file name for 2nd effect
 @rem create combined effect name as supported by API
+
 if %effect_2%==superres (
-	set model_file_2=%base_model_path%\%architecture%\%effect_2%_%input_sample_rate_2%to%output_sample_rate_2%.trtpkg
+	set model_file_2=%base_model_path%\%effect_2%_%input_sample_rate_2%to%output_sample_rate_2%.trtpkg
 	set combined_effect_name=%effect%%input_sample_rate%_%effect_2%%input_sample_rate_2%to%output_sample_rate_2%
 ) else (
-	set model_file_2=%base_model_path%\%architecture%\%effect_2%_%input_sample_rate_2%.trtpkg
+	set model_file_2=%base_model_path%\%effect_2%_%input_sample_rate_2%.trtpkg
 	set combined_effect_name=%effect%%input_sample_rate%to%output_sample_rate%_%effect_2%%input_sample_rate_2%
 )
 
@@ -267,7 +293,6 @@ goto done
 	echo 	- aec 48k 48k	
 	echo 	- superres 8k 16k
 	echo 	- superres 16k 48k	
-	echo 	- superres 8k 48k
 	goto single_effect_exit
 
 :chain_effect_not_supported

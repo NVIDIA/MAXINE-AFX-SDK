@@ -69,7 +69,9 @@ typedef enum {
   /** (32 bit SDK only) COM operation failed */
   NVAFX_STATUS_32_COM_ERROR = 10,
   /** The selected GPU is not supported. The SDK requires Turing and above GPU with Tensor cores */
-  NVAFX_STATUS_GPU_UNSUPPORTED = 11
+  NVAFX_STATUS_GPU_UNSUPPORTED = 11,
+  /** Cuda Context Failure Error */
+  NVAFX_STATUS_CUDA_CONTEXT_CREATION_FAILED = 12,
 } NvAFX_Status;
 
 /** Bool type (stdbool is available only with C99) */
@@ -233,7 +235,6 @@ NvAFX_Status NVAFX_API NvAFX_Reset(NvAFX_Handle effect);
 #define NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DENOISER_16k "superres8kto16k_denoiser16k"
 #define NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_16k "superres8kto16k_dereverb16k"
 #define NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_DENOISER_16k "superres8kto16k_dereverb_denoiser16k"
-
 /** Parameter selectors */
 
 /** Common Effect parameters. */

@@ -61,7 +61,36 @@ std::vector<std::string> GetList(std::string effect, const char delimeter[] = ",
   }
   return List;
 }
-
+const std::string GetErrorCodeString(NvAFX_Status status) {
+  switch (status) {
+  case NVAFX_STATUS_SUCCESS:
+    return "NVAFX_STATUS_SUCCESS";
+  case NVAFX_STATUS_FAILED:
+    return "NVAFX_STATUS_FAILED";
+  case NVAFX_STATUS_INVALID_HANDLE:
+    return "NVAFX_STATUS_INVALID_HANDLE";
+  case NVAFX_STATUS_INVALID_PARAM:
+    return "NVAFX_STATUS_INVALID_PARAM";
+  case NVAFX_STATUS_IMMUTABLE_PARAM:
+    return "NVAFX_STATUS_IMMUTABLE_PARAM";
+  case NVAFX_STATUS_INSUFFICIENT_DATA:
+    return "NVAFX_STATUS_INSUFFICIENT_DATA";
+  case NVAFX_STATUS_EFFECT_NOT_AVAILABLE:
+    return "NVAFX_STATUS_EFFECT_NOT_AVAILABLE";
+  case NVAFX_STATUS_OUTPUT_BUFFER_TOO_SMALL:
+    return "NVAFX_STATUS_OUTPUT_BUFFER_TOO_SMALL";
+  case NVAFX_STATUS_MODEL_LOAD_FAILED:
+    return "NVAFX_STATUS_MODEL_LOAD_FAILED";
+  case NVAFX_STATUS_32_SERVER_NOT_REGISTERED:
+    return "NVAFX_STATUS_32_SERVER_NOT_REGISTERED";
+  case NVAFX_STATUS_32_COM_ERROR:
+    return "NVAFX_STATUS_32_COM_ERROR";
+  case NVAFX_STATUS_GPU_UNSUPPORTED:
+    return "NVAFX_STATUS_GPU_UNSUPPORTED";
+  default:
+    return "NVAFX_STATUS_SUCCESS";
+  }
+}
 class EffectsDemoApp {
  public:
   bool run(const ConfigReader& config_reader, std::unordered_map<std::string, std::vector<std::string>>& map);
@@ -151,6 +180,14 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
   std::string output_wav = config_reader.GetConfigValue(kConfigFileOutputVariable);
 
   CWaveFileWrite wav_write(output_wav, output_sample_rate_, num_output_channels_, 32, true);
+  
+  std::size_t dot_pos = output_wav.find_last_of('.');
+  std::string output_wav_file_name;
+  if (dot_pos == std::string::npos || output_wav.substr(dot_pos+1) != "wav") {
+    output_wav_file_name = output_wav;
+  } else {
+    output_wav_file_name = output_wav.substr(0, dot_pos);
+  }
 
   float frame_in_secs = static_cast<float>(num_input_samples_per_frame_) / static_cast<float>(input_sample_rate_);
   float total_run_time = 0.f;
@@ -179,8 +216,9 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
       input[0] = &audio_data.data()[offset];
       input[1] = &farend_audio_data.data()[offset];
       output[0] = frame.get();
-      if (NvAFX_Run(handle_, input, output, num_input_samples_per_frame_, num_input_channels_) != NVAFX_STATUS_SUCCESS) {
-        std::cerr << "NvAFX_Run() failed" << std::endl;
+      NvAFX_Status status = NvAFX_Run(handle_, input, output, num_input_samples_per_frame_, num_input_channels_);
+      if (status != NVAFX_STATUS_SUCCESS) {
+        std::cerr << "NvAFX_Run() failed with error " << GetErrorCodeString(status) << std::endl;
         return false;
       }
     } else {
@@ -188,8 +226,9 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
       float* output[1];
       input[0] = &audio_data.data()[offset];
       output[0] = frame.get();
-      if (NvAFX_Run(handle_, input, output, num_input_samples_per_frame_, num_input_channels_) != NVAFX_STATUS_SUCCESS) {
-        std::cerr << "NvAFX_Run() failed" << std::endl;
+      NvAFX_Status status = NvAFX_Run(handle_, input, output, num_input_samples_per_frame_, num_input_channels_);
+      if (status != NVAFX_STATUS_SUCCESS) {
+        std::cerr << "NvAFX_Run() failed with error " << GetErrorCodeString(status) << std::endl;
         return false;
       }
     }
@@ -205,7 +244,7 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
       checkpoint += 0.1f;
     }
 
-      wav_write.writeChunk(frame.get(), num_output_samples_per_frame_ * sizeof(float));
+    wav_write.writeChunk(frame.get(), num_output_samples_per_frame_ * sizeof(float));
 
     if (real_time_) {
       auto end_tick = std::chrono::high_resolution_clock::now();
@@ -226,12 +265,13 @@ bool EffectsDemoApp::generate_output(const ConfigReader& config_reader, NvAFX_Ha
   }
 
   wav_write.commitFile();
-    std::cout << "Output wav file written. " << output_wav << std::endl
-              << "Total " << audio_data.size() << " samples written"
-              << std::endl;
 
-  if (NvAFX_DestroyEffect(handle_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_DestroyEffect() failed" << std::endl;
+  std::cout << "Output wav file written. " << output_wav << std::endl
+            << "Total " << audio_data.size() << " samples written"
+            << std::endl;
+  NvAFX_Status status = NvAFX_DestroyEffect(handle_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_DestroyEffect() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
 
@@ -334,34 +374,41 @@ bool EffectsDemoApp::chaining_run(const ConfigReader& config_reader,std::unorder
 {
   NvAFX_Handle chained_handle = nullptr;
   std::string effect = map[kConfigEffectVariable][0];
+  NvAFX_Status status;
   if (strcmp(effect.c_str(), "denoiser16k_superres16kto48k") == 0) {
-    if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DENOISER_16k_SUPERRES_16k_TO_48k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
+    status = NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DENOISER_16k_SUPERRES_16k_TO_48k, &chained_handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateChainedEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else if (strcmp(effect.c_str(), "dereverb16k_superres16kto48k") == 0) {
-    if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DEREVERB_16k_SUPERRES_16k_TO_48k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
+    status = NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DEREVERB_16k_SUPERRES_16k_TO_48k, &chained_handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateChainedEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else if (strcmp(effect.c_str(), "dereverb_denoiser16k_superres16kto48k") == 0) {
-    if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DEREVERB_DENOISER_16k_SUPERRES_16k_TO_48k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
+    status = NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_DEREVERB_DENOISER_16k_SUPERRES_16k_TO_48k, &chained_handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateChainedEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else if (strcmp(effect.c_str(), "superres8kto16k_denoiser16k") == 0) {
-    if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DENOISER_16k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
+    status = NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DENOISER_16k, &chained_handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateChainedEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else if (strcmp(effect.c_str(), "superres8kto16k_dereverb16k") == 0) {
-    if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_16k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
+    status = NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_16k, &chained_handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateChainedEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else if (strcmp(effect.c_str(), "superres8kto16k_dereverb_denoiser16k") == 0) {
-    if (NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_DENOISER_16k, &chained_handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateChainedEffect() failed" << std::endl;
+    status = NvAFX_CreateChainedEffect(NVAFX_CHAINED_EFFECT_SUPERRES_8k_TO_16k_DEREVERB_DENOISER_16k, &chained_handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateChainedEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else {
@@ -369,54 +416,60 @@ bool EffectsDemoApp::chaining_run(const ConfigReader& config_reader,std::unorder
     return false;
   }
   const char* model[] = {map[kConfigFileModelVariable][0].c_str(), map[kConfigFileModelVariable][1].c_str()};
-
-  if (NvAFX_SetStringList(chained_handle, NVAFX_PARAM_MODEL_PATH, model, map[kConfigFileModelVariable].size())
-      != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_SetStringList() failed" << std::endl;
+  status = NvAFX_SetStringList(chained_handle, NVAFX_PARAM_MODEL_PATH, model, map[kConfigFileModelVariable].size());
+  if (status!= NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_SetStringList() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
   float intensity_ratio[2] = { std::strtof(map[kConfigIntensityRatioVariable][0].c_str(), nullptr),
                                std::strtof(map[kConfigIntensityRatioVariable][1].c_str(), nullptr) };
-
-  if (NvAFX_SetFloatList(chained_handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio, map[kConfigFileModelVariable].size()) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_SetFloatList(Intensity Ratio: " << intensity_ratio_ << ") failed" << std::endl;
+  status = NvAFX_SetFloatList(chained_handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio, map[kConfigFileModelVariable].size());
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_SetFloatList(Intensity Ratio: " << intensity_ratio_ << ") failed with error " << GetErrorCodeString(status) << std::endl;
   }
 
   std::cout << "Loading effect" << " ... ";
-  if (NvAFX_Load(chained_handle) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_Load() failed" << std::endl;
+  status = NvAFX_Load(chained_handle);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_Load() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
   std::cout << "Done" << std::endl;
+  status = NvAFX_GetU32(chained_handle, NVAFX_PARAM_INPUT_SAMPLE_RATE, &input_sample_rate_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
+    return false;
+  }
+  status = NvAFX_GetU32(chained_handle, NVAFX_PARAM_OUTPUT_SAMPLE_RATE, &output_sample_rate_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
+    return false;
+  }
+  status = NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_INPUT_CHANNELS, &num_input_channels_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
+    return false;
+  }
+  status = NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_OUTPUT_CHANNELS, &num_output_channels_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
+    return false;
+  }
+  status = NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_INPUT_SAMPLES_PER_FRAME, &num_input_samples_per_frame_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
+    return false;
+  }
+  status = NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_OUTPUT_SAMPLES_PER_FRAME, &num_output_samples_per_frame_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
+    return false;
+  }
 
-  if (NvAFX_GetU32(chained_handle, NVAFX_PARAM_INPUT_SAMPLE_RATE, &input_sample_rate_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
-    return false;
-  }
-  if (NvAFX_GetU32(chained_handle, NVAFX_PARAM_OUTPUT_SAMPLE_RATE, &output_sample_rate_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
-    return false;
-  }
-
-  if (NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_INPUT_CHANNELS, &num_input_channels_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
-    return false;
-  }
-  if (NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_OUTPUT_CHANNELS, &num_output_channels_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
-    return false;
-  }
-  if (NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_INPUT_SAMPLES_PER_FRAME, &num_input_samples_per_frame_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
-    return false;
-  }
-  if (NvAFX_GetU32(chained_handle, NVAFX_PARAM_NUM_OUTPUT_SAMPLES_PER_FRAME, &num_output_samples_per_frame_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
-    return false;
-  }
   float intensity_ratio_local[2];
-  if (NvAFX_GetFloatList(chained_handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio_local, 2) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetFloatList() failed" << std::endl;
+  status = NvAFX_GetFloatList(chained_handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio_local, 2);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetFloatList() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
   std::cout << "  Effect properties            : " << std::endl
@@ -440,11 +493,13 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
   if (real_time_ == true) {
     std::cout << "App will run in real time mode ..." << std::endl;
   }
+  NvAFX_Status status;
 
   int num_effects;
   NvAFX_EffectSelector* effects;
-  if (NvAFX_GetEffectList(&num_effects, &effects) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetEffectList() failed" << std::endl;
+  status = NvAFX_GetEffectList(&num_effects, &effects);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetEffectList() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
   std::cout << "Total Effects supported: " << num_effects << std::endl;
@@ -459,28 +514,35 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
   NvAFX_Handle handle;
   std::string effect = config_reader.GetConfigValue(kConfigEffectVariable);
   if (strcmp(effect.c_str(), "denoiser") == 0) {
-    if (NvAFX_CreateEffect(NVAFX_EFFECT_DENOISER, &handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+    status = NvAFX_CreateEffect(NVAFX_EFFECT_DENOISER, &handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else if (strcmp(effect.c_str(), "dereverb") == 0) {
-    if (NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB, &handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+    status = NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB, &handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else if (strcmp(effect.c_str(), "dereverb_denoiser") == 0) {
-    if (NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB_DENOISER, &handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+    status = NvAFX_CreateEffect(NVAFX_EFFECT_DEREVERB_DENOISER, &handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
-  } else if (strcmp(effect.c_str(), "aec") == 0) {
-    if (NvAFX_CreateEffect(NVAFX_EFFECT_AEC, &handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+  }
+  else if (strcmp(effect.c_str(), "aec") == 0) {
+    status = NvAFX_CreateEffect(NVAFX_EFFECT_AEC, &handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
-  } else if (strcmp(effect.c_str(), "superres") == 0) {
-    if (NvAFX_CreateEffect(NVAFX_EFFECT_SUPERRES, &handle) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_CreateEffect() failed" << std::endl;
+  }
+  else if (strcmp(effect.c_str(), "superres") == 0) {
+    status = NvAFX_CreateEffect(NVAFX_EFFECT_SUPERRES, &handle);
+    if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_CreateEffect() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
     }
   } else {
@@ -497,33 +559,37 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
   }*/
 
   std::string model_file = config_reader.GetConfigValue(kConfigFileModelVariable);
-  if (NvAFX_SetString(handle, NVAFX_PARAM_MODEL_PATH, model_file.c_str())
-    != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_SetString() failed" << std::endl;
+  status = NvAFX_SetString(handle, NVAFX_PARAM_MODEL_PATH, model_file.c_str());
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_SetString() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
 
-  if (NvAFX_SetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_SetFloat(Intensity Ratio: " << intensity_ratio_ << ") failed" << std::endl;
+  status = NvAFX_SetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, intensity_ratio_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_SetFloat(Intensity Ratio: " << intensity_ratio_ << ") failed with error " << GetErrorCodeString(status) << std::endl;
   }
 
+  status = NvAFX_SetU32(handle, NVAFX_PARAM_ENABLE_VAD, vad_supported_);
   // Enabling VAD based on SDK user input!
-  if (NvAFX_SetU32(handle, NVAFX_PARAM_ENABLE_VAD, vad_supported_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "Could not initialize VAD" << std::endl;
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "Could not initialize VAD with error " << GetErrorCodeString(status) << std::endl;
   }
   
   // Another option could be to use cudaGetDeviceCount for num
   int num_supported_devices = 0;
-  if (NvAFX_GetSupportedDevices(handle, &num_supported_devices, nullptr) != NVAFX_STATUS_OUTPUT_BUFFER_TOO_SMALL) {
-    std::cerr << "Could not get number of supported devices" << std::endl;
+  status = NvAFX_GetSupportedDevices(handle, &num_supported_devices, nullptr);
+  if (status != NVAFX_STATUS_OUTPUT_BUFFER_TOO_SMALL) {
+    std::cerr << "Could not get number of supported devices with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
 
   std::cout << "Number of supported devices for this model: " << num_supported_devices << std::endl;
 
   std::vector<int> ret(num_supported_devices);
-  if (NvAFX_GetSupportedDevices(handle, &num_supported_devices, ret.data()) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "No supported devices found" << std::endl;
+  status = NvAFX_GetSupportedDevices(handle, &num_supported_devices, ret.data());
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "No supported devices found with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
 
@@ -533,45 +599,54 @@ bool EffectsDemoApp::run(const ConfigReader& config_reader, std::unordered_map<s
   }
 
   std::cout << "Loading effect" << " ... ";
-  if (NvAFX_Load(handle) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_Load() failed" << std::endl;
+  status = NvAFX_Load(handle);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_Load() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
   std::cout << "Done" << std::endl;
 
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_INPUT_SAMPLE_RATE, &input_sample_rate_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+  status = NvAFX_GetU32(handle, NVAFX_PARAM_INPUT_SAMPLE_RATE, &input_sample_rate_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_OUTPUT_SAMPLE_RATE, &output_sample_rate_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+  status = NvAFX_GetU32(handle, NVAFX_PARAM_OUTPUT_SAMPLE_RATE, &output_sample_rate_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_INPUT_CHANNELS, &num_input_channels_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+  status = NvAFX_GetU32(handle, NVAFX_PARAM_NUM_INPUT_CHANNELS, &num_input_channels_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_OUTPUT_CHANNELS, &num_output_channels_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+  status = NvAFX_GetU32(handle, NVAFX_PARAM_NUM_OUTPUT_CHANNELS, &num_output_channels_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_INPUT_SAMPLES_PER_FRAME, &num_input_samples_per_frame_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+  status = NvAFX_GetU32(handle, NVAFX_PARAM_NUM_INPUT_SAMPLES_PER_FRAME, &num_input_samples_per_frame_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_NUM_OUTPUT_SAMPLES_PER_FRAME, &num_output_samples_per_frame_) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetU32() failed" << std::endl;
+  status = NvAFX_GetU32(handle, NVAFX_PARAM_NUM_OUTPUT_SAMPLES_PER_FRAME, &num_output_samples_per_frame_);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
 
   unsigned vad_enabled_local;
-  if (NvAFX_GetU32(handle, NVAFX_PARAM_ENABLE_VAD, &vad_enabled_local) != NVAFX_STATUS_SUCCESS) {
-      std::cerr << "NvAFX_GetU32() failed" << std::endl;
+  status = NvAFX_GetU32(handle, NVAFX_PARAM_ENABLE_VAD, &vad_enabled_local);
+  if (status != NVAFX_STATUS_SUCCESS) {
+      std::cerr << "NvAFX_GetU32() failed with error " << GetErrorCodeString(status) << std::endl;
       return false;
   }
   float intensity_ratio_local;
-  if (NvAFX_GetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, &intensity_ratio_local) != NVAFX_STATUS_SUCCESS) {
-    std::cerr << "NvAFX_GetFloat() failed" << std::endl;
+  status = NvAFX_GetFloat(handle, NVAFX_PARAM_INTENSITY_RATIO, &intensity_ratio_local);
+  if (status != NVAFX_STATUS_SUCCESS) {
+    std::cerr << "NvAFX_GetFloat() failed with error " << GetErrorCodeString(status) << std::endl;
     return false;
   }
 

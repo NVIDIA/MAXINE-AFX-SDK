@@ -20,7 +20,7 @@ target_link_libraries(effects_demo ${LINK_LIBS})
 add_custom_command(TARGET effects_demo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	${CMAKE_CURRENT_SOURCE_DIR}/run_effects_demo.bat
-	${CMAKE_CURRENT_SOURCE_DIR}/readme.txt
+	${CMAKE_CURRENT_SOURCE_DIR}/readme.MD
     ${CMAKE_CURRENT_SOURCE_DIR}/denoiser48k_cfg.txt
     ${CMAKE_CURRENT_SOURCE_DIR}/run_denoiser_48k.bat
 	$<TARGET_FILE_DIR:effects_demo>

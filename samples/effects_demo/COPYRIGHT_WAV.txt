@@ -28,28 +28,25 @@ This copyright applies to following wav files:
 │               nearend_48k.wav
 │
 ├───chaining
-│   ├───denoiser
-│   │   ├───16k
-│   │   │       Chip_Bag_16k.wav
-│   │   │       Typing_16k.wav
-│   │   │
-│   │   └───8k
-│   │           Chip_Bag_8k.wav
-│   │           Typing_8k.wav
+│   ├───denoiser_16k_superres_48k
+│   │       Chip_Bag_16k.wav
+│   │       Typing_16k.wav
 │   │
-│   ├───dereverb
-│   │   ├───16k
-│   │   │       Echo_Craig_16k.wav
-│   │   │
-│   │   └───8k
-│   │           Echo_Craig_8k.wav
+│   ├───dereverb_16k_superres_48k
+│   │       Echo_Craig_16k.wav
 │   │
-│   └───dereverb_denoiser
-│       ├───16k
-│       │       Craig_Echo_ChipBag_16k.wav
-│       │
-│       └───8k
-│               Air_Conditioning_8k.wav
+│   ├───dereverb_denoiser_16k_superres_48k
+│   │       Craig_Echo_ChipBag_16k.wav
+│   │
+│   ├───superres_8k_denoiser_16k
+│   │       Chip_Bag_8k.wav
+│   │       Typing_8k.wav
+│   │
+│   ├───superres_8k_dereverb_16k
+│   │       Echo_Craig_8k.wav
+│   │
+│   └───superres_8k_dereverb_denoiser_16k
+│           Air_Conditioning_8k.wav
 │
 ├───denoiser
 │   ├───16k
@@ -88,10 +85,6 @@ This copyright applies to following wav files:
 └───superres
     ├───16k
     │       superres_16k.wav
-    │       superres_16k_2.wav
-    │       superres_16k_3.wav
     │
     └───8k
             superres_8k.wav
-            superres_8k_2.wav
-            superres_8k_3.wav
